@@ -23,7 +23,6 @@ namespace Inkwave
         public static string[] teamHex = { "#ff8a14", "#2f5bff" };
         public static float time;
         public static string mode = "boot";                        // 'boot' | 'menu' | 'match'
-        public static SpecialSystem specials;
     }
 
     // One payload type for every bus event (JS passes object literals). Fields are the union of the payloads listed in

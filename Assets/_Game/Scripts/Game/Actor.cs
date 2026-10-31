@@ -316,14 +316,7 @@ namespace Inkwave
             // ---- super jump / specials in progress own the body
             if (superJumpState != null) { updateSuperJump(dt); finishFrame(dt); return; }
             var spx = specialActive;
-            if (spx != null)
-            {
-                // Tidal Slam still runs the old local code
-                if (spx.id == "slam") { updateSpecial(dt); if (alive) finishFrame(dt); return; }
-                // All other specials go through the framework
-                G.specials.tick(this, spx, dt);
-                if (alive) finishFrame(dt); return;
-            }
+            if (spx != null && spx.body) { updateSpecial(dt); if (alive) finishFrame(dt); return; }
             if (specialPressed && specialReady()) { startSpecial(); finishFrame(dt); return; }
 
             // ---- form: squid while the swim button is held. Swim + fire both held → the most recent press wins, so diving

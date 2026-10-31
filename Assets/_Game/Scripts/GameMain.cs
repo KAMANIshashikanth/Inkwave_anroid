@@ -30,7 +30,6 @@ namespace Inkwave
         public static string startSub;      // … and sub (-smoketest-sub; default: the weapon's own)
         public static bool randomRoster;    // -smoketest-roster random: every bot gets a random weapon / sub / special
         public static int rosterSeed;       // the roster's RNG seed (logged in summary.txt so a run can be replayed)
-        public static string startSpecial;      // the local player's special (-smoketest-special)
 
         void Awake()
         {
