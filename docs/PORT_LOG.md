@@ -134,3 +134,4 @@
 - Captures `Builds/Captures/t7h-{day,dusk}/`, `t7i/`; smoke frames `Builds/Smoke/t7j*/`: dusk lit windows + beacons, lighthouse beam, team-coloured town-hall flags and spawn pad, waving bunting.
 - Smoke: `t7j` PASS 53.4 fps, `t7j-dusk` PASS 55.1 fps, errors 0 (Windows).
 - Commit: fc62a3d
+- Phone autopilot (CPH2371, APK 103 MB, `Builds/PhoneSmoke/t7j-{day,dusk}/`): day PASS fps avg 45.0, dusk PASS 43.2, errors 0 (part 1: 40.8 / 38.2 — URP post off pays for the new shaders). Renders as on Windows.
