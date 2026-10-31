@@ -53,4 +53,4 @@
 - Captures: `Builds/Smoke/t3-<id>/special_1a_<id>.png`, `special_1b_<id>.png` (bubbler: the iridescent team shield round the player; barrage_mist: overlapping murk clouds).
 - Phone: not required for this task (M3 phone gate is Task 5)
 - Known gaps / deviations from the JS: `SpecialImpl` is an abstract class mirroring the JS IMPL object (start / end / tick / body / move / weapon / filterDamage) instead of the plan's interface; world-object hits are virtuals on `SpecialWorld` (no world objects exist until Task 4's bubbles). Not ported yet, by design: online ghosts, minimap layer (`drawMap`), HUD prompt text, cheers (booyah, Task 5), Return markers (jetpack / zipcaster, Task 5; `end` already super-jumps back when `jumpBack` is set), Boss splash (M7). The shield sphere is a 40x28 UV sphere instead of an icosahedron (detail 4). Bots on a special not ported yet use it with Slam's rule (`dist < 4.5`), since that is what it plays as. Ink Tempest was ported earlier but never reachable (every special played as Slam); it is live now.
-- Commit: pending
+- Commit: 0d58516
