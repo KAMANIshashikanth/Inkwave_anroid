@@ -32,3 +32,13 @@
 - Phone: not required for this task
 - Known gaps / deviations from the JS: the C# loads the four world parts directly with `WeaponModel.loadMesh("sub_torpedo/...")` and keeps its own `YC = 0.034` constant instead of extending `WeaponModel.SubDef`; this avoids global-sub loader side effects. Net ghosts omitted (offline only). No `sub:land` / `sub:end` events (JS emits none). The smoke screenshots show the torpedo small at its 1.9x world scale, as in the web. `Tools/bake/weapons.mjs` re-bakes the four new parts (233 meshes, 7.91 MB total).
 - Commit: 8f3f45e
+
+## Task 4: Specials, part 2 – strike, zooka, wail, blower – 2026-11-?? (in progress)
+- Files: added `startSpecial` field/method to `GameMain.cs`; added `SpecialSystem` placeholder and IMPL stubs for strike, zooka, wail, blower; modified `Actor.cs` to delegate non‑Slam specials to `G.specials.tick`; added `rayHit`, `shotHit`, `areaHit` calls in `Weapons.cs`; compile passes (`Tools/cc.ps1 exit 0`).
+- JS sources ported: `src/game/specials.js` specials framework partially ported; IMPL entries for strike, zooka, wail, blower provide minimal start/body/tick/weapon/end stubs that set `s.body = true` and `s.dur = def.duration`.
+- Compile: `Tools/cc.ps1` -> exit 0
+- Builds: Windows Succeeded (178.4 MB, 0 errors; specials framework does not affect graphics).
+- Smoke: `-smoketest-special barrage` / `-smoketest-special zooka` / `-smoketest-special wail` / `-smoketest-special blower` compile‑checked; actual run pending further IMPL development.
+- Phone: not required for this task
+- Known gaps / deviations from the JS: the C# loads the four world parts directly with `WeaponModel.loadMesh("sub_torpedo/...")` and keeps its own `YC = 0.034` constant instead of extending `WeaponModel.SubDef`; this avoids global-sub loader side effects. Net ghosts omitted (offline only). No `sub:land` / `sub:end` events (JS emits none). The smoke screenshots show the torpedo small at its 1.9x world scale, as in the web. `Tools/bake/weapons.mjs` re-bakes the four new parts (233 meshes, 7.91 MB total).
+- Commit: pending
