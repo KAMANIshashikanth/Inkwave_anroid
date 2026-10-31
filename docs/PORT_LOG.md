@@ -111,3 +111,4 @@
 - Performance (Windows, avg fps; t6b was 59.8): dressing as loaded 47.4 → one shadow cascade 52.2 → culling chunks (cells ≥ 20 m, ≤ 8 × 8 per mesh, meshes > 12k tris; 398 objects) 55.0 (−8 %, inside the 10 % budget). Dusk `t7d-dusk` 56.9.
 - Smoke: `t7d` PASS (errors 0), `t7d-dusk` PASS (errors 0). Windows build 364.7 MB.
 - Stand-ins (Task 7 part 2): sea = glossy lit plane in the theme's sea colours (SEA shader not ported); environment.js `patchScenery` haze / night window glow → Unity linear fog only; cloth wave (flags, bunting) static; spawn-pad face / barrier and lighthouse beam unlit `uColor`; no animation yet (sailboats, buoys, gulls, moored boats, ferris wheel, lighthouse — specs are in the bake); murals not yet in `Level.shader` (texture + table are in the bake); post = URP volume instead of the grade pass; dusk lamp pools; Android APK size not measured yet.
+- Commit: 0ef3c44
