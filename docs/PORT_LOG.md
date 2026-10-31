@@ -133,3 +133,4 @@
 - BUG found + fixed: the `t7g` / `t7i` in-game frames were crushed and over-saturated (captures fine). The player logs show why: in `t7f` URP's UberPost shader was stripped ("PostProcessing render passes will not execute"), in later builds it ran — and its final pass encodes linear → sRGB before the grade pass, which the final blit then encodes again. URP's post is now off; the grade pass is the whole post stack. renderer.js's bloom (medium / high tiers) is not ported yet.
 - Captures `Builds/Captures/t7h-{day,dusk}/`, `t7i/`; smoke frames `Builds/Smoke/t7j*/`: dusk lit windows + beacons, lighthouse beam, team-coloured town-hall flags and spawn pad, waving bunting.
 - Smoke: `t7j` PASS 53.4 fps, `t7j-dusk` PASS 55.1 fps, errors 0 (Windows).
+- Commit: fc62a3d
