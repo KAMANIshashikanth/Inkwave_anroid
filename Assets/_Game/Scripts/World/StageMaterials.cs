@@ -3,8 +3,8 @@
 //                                 alpha test, side), MeshBasic → unlit, transparent → alpha / additive blended,
 //   MeshDepthMaterial (custom shadow depth) → not drawn.
 // First-pass stand-ins until their chunks are ported (Task 7 part 2): environment.js patchScenery haze / night glow
-// (HZ_*: plain lit + Unity fog; HZ_GULL's wing flap is ported), the cloth wave (flags: static), the Sea ShaderMaterial (a glossy lit plane in the
-// theme's sea colours), the spawn pads' face / barrier and the lighthouse beam (unlit uColor / uCol).
+// (HZ_*: plain lit + Unity fog; HZ_GULL's wing flap is ported), the cloth wave (flags: static), the spawn pads' face /
+// barrier and the lighthouse beam (unlit uColor / uCol). The Sea ShaderMaterial → Inkwave/Env/Sea (open-sea port).
 // three colours are linear: they are written with SetVector (SetColor would treat them as sRGB).
 using System.Collections.Generic;
 using UnityEngine;
@@ -33,6 +33,8 @@ namespace Inkwave.World
         Material make(StageLoader.MatJ m, StageLoader.ObjJ o)
         {
             if (m.type == "MeshDepthMaterial" || m.type == "MeshDistanceMaterial") return null;
+            if (m.type == "ShaderMaterial" && m.name == "Sea" && Shader.Find("Inkwave/Env/Sea") != null)
+                return new Material(Shader.Find("Inkwave/Env/Sea")) { name = "stage:sea" };   // env globals: StageEnvironment
             if (shader == null) shader = Shader.Find("Inkwave/Prop");
             var mat = new Material(shader) { name = $"stage:{m.id}:{m.type}:{o.name}" };
             Vector4 col = m.color != null && m.color.Length >= 3 ? new Vector4(m.color[0], m.color[1], m.color[2], 1) : Vector4.one;
@@ -90,7 +92,7 @@ namespace Inkwave.World
             return mat;
         }
 
-        Texture2D texture(string file)
+        public Texture2D texture(string file)
         {
             if (string.IsNullOrEmpty(file)) return null;
             if (texs.TryGetValue(file, out var t)) return t;

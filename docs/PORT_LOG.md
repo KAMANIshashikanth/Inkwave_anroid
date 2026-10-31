@@ -121,3 +121,8 @@
 - Smoke: `t7f` PASS 55.4 fps, `t7f-dusk` PASS 58.3 fps, errors 0 (Windows).
 - Still stand-ins: sea shader, scenery haze / night window glow, cloth wave, spawn pads, lighthouse beam look, dusk lamp pools.
 - Commit: 7ca1a9b
+
+## Task 7 (part 2b): the sea – 2026-10-31 (Claude)
+- Files: created `Shaders/Env/Sea.shader` (`Inkwave/Env/Sea`: environment.js SEA_VERT / SEA_FRAG open-sea path + GLSL_SKY_COMMON / GLSL_DECK (DECK_FIELD) / GLSL_SWELL — swell, four-scale wave normals, shallows, crests, sky-gradient reflection + Fresnel, glints, real + analytic deck shadow, edge / object foam, aerial haze; three space throughout); modified `World/StageEnvironment.cs` (`envGlobals`: environment.js's shared uniforms as globals under their JS names, wave / foam textures, the deck distance field as an RHalf texture), `World/StageLoader.cs` (EnvU, deckField), `World/StageMaterials.cs` (Sea → the port), `Tools/bake/pages/stage.js` (exports the deck field render target → `Resources/Stages/<id>/deck.bytes`, 780 × 1160 R16F), `GameMain.cs`, `Editor/StageCapture.cs`, `Editor/GameBuilds.cs`.
+- Captures `Builds/Captures/t7g/`: waves, sky reflection, turquoise shallows by the pier, horizon haze.
+- Smoke: `t7g` PASS 51.4 fps, `t7g-dusk` PASS 52.5 fps, errors 0 (t7f: 55.4 / 58.3) — the sea's per-pixel cost, for the optimisation pass. Not ported: Halyard's marina water (GLSL_SEA_MARINA, planar reflection) — Task 8.

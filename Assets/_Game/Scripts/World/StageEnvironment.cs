@@ -70,6 +70,36 @@ namespace Inkwave.World
             post(cam, s, bloom);
         }
 
+        /** environment.js's shared uniforms as shader globals (same names: uSunDir, uZenith, …, three-space values),
+         *  plus the sea's wave / foam textures and the deck distance field */
+        public static void envGlobals(StageLoader.StageJ s, StageMaterials mats)
+        {
+            var u = s.envUniforms;
+            if (u == null) return;
+            void V(string n, float[] a) { if (a != null && a.Length >= 3) Shader.SetGlobalVector(n, new Vector4(a[0], a[1], a[2], a.Length > 3 ? a[3] : 0)); }
+            V("uSunDir", u.uSunDir); V("uZenith", u.uZenith); V("uSkyMid", u.uSkyMid); V("uHorizon", u.uHorizon); V("uGround", u.uGround);
+            V("uHorizonGlow", u.uHorizonGlow); V("uGlowColor", u.uGlowColor); V("uGlowParams", u.uGlowParams); V("uHaze", u.uHaze);
+            V("uSeaDeep", u.uSeaDeep); V("uSeaShallow", u.uSeaShallow); V("uSeaCrest", u.uSeaCrest); V("uFoamColor", u.uFoamColor);
+            V("uSunLight", u.uSunLight); V("uSeaAmbient", u.uSeaAmbient); V("uFoamRect", u.uFoamRect); V("uDeckFieldRect", u.uDeckFieldRect);
+            V("uDeckFieldK", u.uDeckFieldK); V("uDeckBox", u.uDeckBox);
+            Shader.SetGlobalFloat("uNight", u.uNight); Shader.SetGlobalFloat("uSunSpec", u.uSunSpec); Shader.SetGlobalFloat("uWaveStrength", u.uWaveStrength);
+            var wave = mats.texture(u.uWaveTex?.tex); if (wave != null) Shader.SetGlobalTexture("uWaveTex", wave);
+            var foam = mats.texture(u.uFoamTex?.tex); if (foam != null) Shader.SetGlobalTexture("uFoamTex", foam);
+            if (deck == null && s.deckField != null && s.deckField.w > 0)
+            {
+                var ta = Resources.Load<TextAsset>($"Stages/{s.id}/{s.deckField.file}");
+                if (ta != null && ta.bytes.Length == s.deckField.w * s.deckField.h * 2)
+                {
+                    deck = new Texture2D(s.deckField.w, s.deckField.h, TextureFormat.RHalf, false, true) { name = "deck-field", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+                    deck.SetPixelData(ta.bytes, 0);
+                    deck.Apply(false, true);
+                }
+                if (ta != null) Resources.UnloadAsset(ta);
+            }
+            if (deck != null) Shader.SetGlobalTexture("uDeckField", deck);
+        }
+        static Texture2D deck;
+
         static Color lin(float[] c) => new Color(c[0], c[1], c[2], 1);
 
         // ---- cubes (RGBA half, faces +X −X +Y −Y +Z −Z in three's cube-camera layout)
@@ -174,6 +204,8 @@ namespace Inkwave.World
             if (skyMat != null) Object.Destroy(skyMat);
             if (sky != null && sky != env) Object.Destroy(sky);
             if (env != null) Object.Destroy(env);
+            if (deck != null) Object.Destroy(deck);
+            deck = null;
             sky = env = null; skyMat = null; volumeGo = null; profile = null; lastData = null;
         }
     }

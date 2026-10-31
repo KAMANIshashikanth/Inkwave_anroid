@@ -26,7 +26,17 @@ namespace Inkwave.World
         [Serializable] public class MuralsJ { public string tex; public MuralRow[] table; }
         [Serializable] public class GradeJ { public float uExposure = 1, uSat = 1, uVib, uContrast = 1, uLift, uVignette; public float[] uShadowTint, uHighTint, bloom; }
         [Serializable] public class ShaderU { public float[] uColor, uCol; public float uAlpha = 1; }
-        [Serializable] public class EnvU { public float[] uSeaDeep, uSeaShallow, uSeaCrest, uHorizon, uSkyMid, uZenith, uSunDir; public float uNight; }
+        [Serializable] public class TexRefJ { public string tex; }
+        // environment.js's shared uniforms (this.U) as baked — three-space values; StageEnvironment makes them shader globals
+        [Serializable]
+        public class EnvU
+        {
+            public float[] uSunDir, uZenith, uSkyMid, uHorizon, uGround, uHorizonGlow, uGlowColor, uGlowParams, uHaze,
+                uSeaDeep, uSeaShallow, uSeaCrest, uFoamColor, uSunLight, uSeaAmbient, uFoamRect, uDeckFieldRect, uDeckFieldK, uDeckBox;
+            public float uNight, uSunSpec = 1, uWaveStrength = 1;
+            public TexRefJ uWaveTex, uFoamTex;
+        }
+        [Serializable] public class FieldJ { public string file; public int w, h; }
         [Serializable]
         public class MatJ
         {
@@ -64,6 +74,7 @@ namespace Inkwave.World
             public FogJ fog;
             public LightJ[] lights;
             public SkyJ sky;
+            public FieldJ deckField;
             public MuralsJ murals;
             public GradeJ grade;
             public EnvU envUniforms;

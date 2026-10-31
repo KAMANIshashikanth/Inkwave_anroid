@@ -10,6 +10,7 @@
 //   Resources/Stages/<id>/<time>.sky.bytes  the sky (dome + clouds) as a 6-face RGBA half-float cubemap (+X −X +Y −Y +Z −Z,
 //                                         three's cube camera conventions, faces as rendered); <time>.env.bytes the same for
 //                                         the sky copy three's image-based light (PMREM) is made from (no sun disk)
+//   Resources/Stages/<id>/deck.bytes      the sea's deck distance field (R16F, json deckField: w × h)
 // IWS1 = IWK1's layout (Tools/bake/iwk.mjs) with 32-bit indices when flags & 2, colour in the Color channel (UNorm8×4)
 // and any extra attribute in the next free TexCoord (named in the json).
 import * as THREE from 'three';
@@ -260,6 +261,17 @@ try {
   const sky = bakeSky(renderer, scene, env);
   await save(`${OUT}/${time}.sky.bytes`, sky);
   if (env._envScene) await save(`${OUT}/${time}.env.bytes`, bakeCube(renderer, env._envScene));
+  // the sea's deck distance field (environment.js _bakeDeckField, a render target): R = signed distance to the deck
+  // union (m), as half floats, row 0 = v 0
+  let deckField = null;
+  if (env._fieldRT) {
+    const rt = env._fieldRT, w = rt.width, h = rt.height, px = new Uint16Array(w * h * 4);
+    renderer.readRenderTargetPixels(rt, 0, 0, w, h, px);
+    const r = new Uint16Array(w * h);
+    for (let i = 0; i < w * h; i++) r[i] = px[i * 4];
+    await save(`${OUT}/deck.bytes`, r.buffer);
+    deckField = { file: 'deck', w, h };
+  }
   const pick = (a, keys) => (a ? a.map((x) => Object.fromEntries(keys.filter((k) => k in x).map((k) => [k, val(x[k])]))) : []);
   // environment.js waterHeightAt = WATER_Y + h(x, z, t) × amp(x, z): amp (the swell, calmer near the deck) read back per
   // fixed spot, so Unity only needs the three-sine h
@@ -279,7 +291,7 @@ try {
     fog: scene.fog ? { color: val(scene.fog.color), near: num(scene.fog.near), far: num(scene.fog.far) } : null,
     background: scene.background && scene.background.isColor ? val(scene.background) : null,
     lights, themeDef: JSON.parse(JSON.stringify(T, (k, v) => (typeof v === 'number' ? num(v) : v))), envUniforms: await uniformsOf(env.U), anim,
-    sky: { file: `${time}.sky`, size: skySize, format: 'rgba16f', faces: ['+x', '-x', '+y', '-y', '+z', '-z'] },
+    sky: { file: `${time}.sky`, size: skySize, format: 'rgba16f', faces: ['+x', '-x', '+y', '-y', '+z', '-z'] }, deckField,
     murals: { tex: await texRef(murals), table: murals.userData.murals ?? null },
     materials: [...mats.values()], textures: [...texs.values()], objects,
   };
