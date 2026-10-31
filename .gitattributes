@@ -1,0 +1,5 @@
+# baked IWK1 meshes and images: never convert line endings
+*.bytes binary
+*.png binary
+*.wav binary
+*.ttf binary

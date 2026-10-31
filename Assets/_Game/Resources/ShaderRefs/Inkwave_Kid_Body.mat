@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Inkwave_Kid_Body
+  m_Shader: {fileID: 4800000, guid: f36115ddf27e6d24aa9f571f4b42404e, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _Cull: 2
+    - _EmissiveI: 0
+    - _Kind: 0
+    - _Rough: 0.5
+    m_Colors:
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _Emissive: {r: 0, g: 0, b: 0, a: 1}
+    - _Iris: {r: 1, g: 0.7, b: 0.10999996, a: 1}
+    - _Iris2: {r: 1, g: 0.41999996, b: 0, a: 1}
+    - _Shirt: {r: 0.95, g: 0.95, b: 0.93, a: 1}
+    - _Shoe: {r: 0.15999997, g: 0.16999996, b: 0.20999995, a: 1}
+    - _Shorts: {r: 0.15999997, g: 0.19999996, b: 0.30999997, a: 1}
+    - _Skin: {r: 1, g: 0.85, b: 0.76, a: 1}
+    - _Sock: {r: 0.96999997, g: 0.96999997, b: 0.96, a: 1}
+    - _Sole: {r: 0.95, g: 0.95, b: 0.93, a: 1}
+    - _Strap: {r: 0.19999996, g: 0.20999995, b: 0.24999997, a: 1}
+    - _Team: {r: 1, g: 0.53999996, b: 0.079999976, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

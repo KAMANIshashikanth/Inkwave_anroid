@@ -1,0 +1,21 @@
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+*.csproj
+*.sln
+*.slnx
+*.apk
+*.aab
+*.log
+.vs/
+.idea/
+
+# INKWAVE reference source (separate git clone, translation input only)
+/reference/
+
+# Android native build temp (CMake objects from Gradle/IL2CPP)
+/.utmp/
