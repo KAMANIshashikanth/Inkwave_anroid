@@ -76,3 +76,10 @@
 - Phone: M3 phone gate NOT DONE yet — needs an APK build and the user's touch test (Review Focus 1: trigger every special from the touch button; aim strike / zooka by touch).
 - Known gaps / deviations from the JS: Return marker badge is a team-coloured ball that greys out (no special icon / clock-sweep until the icon sprites, Task 12); no human cheer button yet (bots cheer; the HUD button comes with Task 13); minimap layers / HUD prompts not drawn (Task 13). One unexplained stall in the first t5 batch (17:53-17:59: jetpack froze 3 min right after the match start, booyah ~40 s mid-match, zipcaster froze in its first second and hit the 240 s TIMEOUT) — every one of these happened before / outside the specials' own code, and none reproduced in the re-runs (`t5-zipcaster`, `t5-jetpack`, `t5-booyah` PASS with normal timing) or in the 17-run regression; watch for it on the phone.
 - Commit: 2273b8a
+
+## M3 phone gate – 2026-10-31 (Claude)
+- Device: OPPO CPH2371 (USB / wireless adb), development APK from the Task 5 code (`Builds/Android/ColorSplash.apk`, 76 MB, `[Inkwave] Android build Succeeded`).
+- Method: `Tools/phone-smoke.sh <serial> <special…>` — one autopilot 90 s match per special on the phone (Unity args through the `unity` intent extra), summaries pulled to `Builds/PhoneSmoke/<special>/`.
+- Result: 19/19 specials PASS on the phone, errors 0, fps avg 52.1-59.1 (slam, storm, barrage, barrage_sticky: PASS read on the device, summaries not pulled — first-run script bug, fixed with `MSYS_NO_PATHCONV`). The min fps in every phone summary (≈1.2-2.1) comes from the smoke test's own screenshots (each freezes the phone ~0.5 s), not gameplay.
+- User feedback: the game "lags / gets stuck sometimes" on the phone. DECISION (user, 2026-10-31): finish all features first, then one optimisation pass ("smooth as slime"). Known hitch sources noted for that pass: first-use shader compiles (warm-up), per-frame allocations in the specials code, the 512 texlib set should be stripped from Android.
+- Not covered by autopilot: triggering each special by touch (Review Focus 1) — to be checked by the user in normal play.
