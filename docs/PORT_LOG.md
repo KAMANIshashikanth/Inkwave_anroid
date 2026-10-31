@@ -100,3 +100,4 @@
 - Fallback: `-captureTexlib off` → `Builds/Captures/t6b_off/` plain mottled surface, no pink.
 - Smoke: `t6b` PASS, fps avg 59.8, errors 0, log `[Inkwave] stage tidewater: layout 8b3b5d82, AO on, texlib 512`. Build 305.7 MB (unchanged).
 - Not ported here: murals (need the murals.js canvas atlas, Task 7), swim wakes (Task 10), dusk lamp pools (Task 7 environment), the see-through window, the ink coat's tamed grazing Fresnel (INK_LIGHTS / INK_LIGHT_MAPS / INK_SHADE — URP's clear coat has fixed F0/F90; grazing ink reads paler than the web).
+- Commit: 6067ee8
