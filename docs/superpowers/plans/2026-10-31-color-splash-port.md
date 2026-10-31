@@ -25,7 +25,7 @@
 | Node | `node` on PATH, v24 (built-in `fetch`, `WebSocket`, `zlib.brotli*`) |
 | Chrome | `C:\Program Files\Google\Chrome\Application\chrome.exe` (Edge also present) |
 | Python | **not installed**; use PowerShell or Node instead |
-| Git repo | root is `D:\color_splash` (also holds the user's other project `PaintBattle`). **`Inkwave_anroid/` has never been committed**: see Task 0. |
+| Git repo | `D:\color_splash\Inkwave_anroid` is its **own** repo, branch `main`, remote `origin` = https://github.com/KAMANIshashikanth/Inkwave_anroid.git (baseline commit `1125009`). It sits inside the folder of a different repo, `D:\color_splash` (the user's `PaintBattle` project, remote `color_splash.git`). Always run git from inside `Inkwave_anroid`; never run git commands for this project from `D:\color_splash`. |
 | Builds (git-ignored) | `Builds/Windows/ColorSplash.exe`, `Builds/Android/ColorSplash.apk`, `Builds/Smoke/`, `Builds/Captures/` |
 
 ### A2. User decisions (do not re-open these)
@@ -34,7 +34,7 @@
 - Branding is **Color Splash**, company **Zoiko**, package **`com.zoiko.colorsplash`**. Never show "INKWAVE" as the title. The credits must say "Original game: INKWAVE by Jayden Davis" and include `LICENSE-INKWAVE.txt` (MIT).
 - **Offline only.** Bots only, no online play.
 - **Squid form is part of this game.** The user's other project PaintBattle has a "no squid" rule; it does **not** apply here.
-- **Never modify, delete or stage `D:\color_splash\PaintBattle`.** The user has uncommitted work there. Never run `git add -A` / `git add .` at the repo root.
+- **Never modify, delete or stage `D:\color_splash\PaintBattle`.** The user has uncommitted work there. Never run git in `D:\color_splash` itself: that is the PaintBattle repo, and `git add` there would embed this repo in it.
 - Gate rule: each milestone ends with a phone test by the user. Do not start the next milestone until the user reports it plays well. So far they reported: M1 "without lag", M2 "too good", M3 mains "working good", M3 kits "good all working".
 - The user said to defer the remaining M2 material polish (Task 18) and keep moving.
 - Not ported, ever:
@@ -178,8 +178,9 @@ JS module → C# status (anything not listed under src/ is in A2's never-port li
 - Follow the naming, header-comment, folder and three-space rules in A3. Every new `Shader.Find` shader goes in `GameBuilds.Shaders`.
 - `reference/inkwave` is read-only. Bakers expose private functions through `hooks.mjs` `EXPOSE`, never by editing files.
 - Git:
-  - stage only paths under `Inkwave_anroid/`;
+  - run git only inside `D:\color_splash\Inkwave_anroid` (its own repo);
   - commit only after the user has approved commits (Task 0), with messages ending in the attribution lines the user's tooling requires;
+  - push to `origin main` only when the user asks;
   - never commit keystores or passwords.
 - No sub-agents. Never kill the user's Unity editor.
 - A task is done only when all of these hold:
@@ -224,10 +225,10 @@ Verification commands used by every task (paths relative to `D:\color_splash\Ink
 - Produces: the compile check, the smoke runner and the log every later task uses.
 
 - [ ] **Step 1: Read the A6 list.**
-- [ ] **Step 2: Ask the user for commit approval.** Ask in these words: "Inkwave_anroid has never been committed. May I commit it now as a baseline, and commit after each task?" On yes, run:
-  `git -C D:\color_splash add Inkwave_anroid` (the nested `.gitignore` excludes Library, Builds, reference, csproj files), then
-  `git -C D:\color_splash commit -m "Inkwave_anroid: baseline of the Color Splash port (M0–M3 partial)"`.
-  Check `git -C D:\color_splash status --short` lists nothing under `Inkwave_anroid/` except ignored files, and that the `PaintBattle/` lines are unchanged.
+- [ ] **Step 2: Check the baseline and ask for commit approval.**
+  1. Run `git -C D:\color_splash\Inkwave_anroid status --short` and `git -C D:\color_splash\Inkwave_anroid log --oneline -3`. Expected: `1125009 first commit` (or later commits) and a clean tree. `.gitignore` excludes Library, Builds, build, .utmp, reference and the csproj files.
+  2. Ask the user in these words: "May I commit to the Inkwave_anroid repo after each task? (I will push only when you ask.)"
+  3. Record the answer in the log.
 - [ ] **Step 3: Create `Tools/cc.ps1`** with exactly:
 
 ```powershell
