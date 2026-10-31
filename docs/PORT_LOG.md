@@ -91,4 +91,4 @@
 - Smoke: `t6` PASS, fps avg 59.8, errors 0 (Windows). Stale path: the first t6 build (before the fixes) logged exactly one `lightmap for tidewater is stale` warning and rendered without AO.
 - Found + fixed: the intermittent smoke "stalls" (and the t5 TIMEOUT) were the player pausing when its window lost focus (`runInBackground: 0`) — smoke runs now set `Application.runInBackground = true`.
 - Known gaps: the props' meshes arrive with Task 7 — until then their colliders are invisible obstacles and faces fully covered by a prop are culled (holes where a prop should stand). Texlib sampling in `Level.shader` (surface patterns) is Task 6 part 2. Size: the texlib PNGs are 46 MB in git and the Windows build grew to 305 MB (both texlib sizes in Resources) — strip the 512 set on Android in the optimisation pass.
-- Commit: pending
+- Commit: d7255a1
