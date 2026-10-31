@@ -973,6 +973,7 @@ namespace Inkwave
             { float cut = G.subs.blockRay(m, dir, len, a.team, dmg); if (cut < len) { len = cut; wallHit = false; } }
             // first enemy along the beam
             Actor victim = null; float victimD = 0;
+            G.specials.rayHit(m, dir, len, a.team, dmg, a.name);
             foreach (var e in G.actors)
             {
                 if (e.team == a.team || !e.alive) continue;
@@ -1372,6 +1373,7 @@ namespace Inkwave
             // enemy ink curtains, devices (sprinklers, beacons) and canopies catch shots (specials.js shotHit — bubbles, tanks —
             // with that module)
             if (!dead && G.subs.blockShot(p.prev, p.pos, p.team, p.damage > 0 ? p.damage : 10)) dead = true;
+            G.specials.shotHit(p.prev, p.pos, p.team, p.damage > 0 ? p.damage : 10, p.owner?.name ?? "shooter");
             // world
             if (!dead)
             {
