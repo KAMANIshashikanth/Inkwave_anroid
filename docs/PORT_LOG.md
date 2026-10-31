@@ -20,4 +20,4 @@
 - Captures: `Builds/Smoke/t1-boomerang/sub_1a_boomerang.png`, `sub_1b_boomerang.png` (and 2a/2b, 3a/3b) show the boomerang
 - Phone: not required for this task
 - Known gaps / deviations from the JS: the reproduction ran on the pre-fix build as `t0` (two FAILs, errors in `Builds/Smoke/t0/summary.txt` at the time); the fix keeps a CPU copy only for `sub_boomerang/body` via `loadRigid(..., readable: true)`, every other baked mesh still calls `UploadMeshData(true)`. Roster RNG is mulberry32 (`Ctx.rng`) seeded per run and logged as `roster: random seed <n>`; `-smoketest-seed N` replays a seed. Random specials are assigned and logged but still play as Tidal Slam until Task 3.
-- Commit: pending
+- Commit: 7140039
