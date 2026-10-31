@@ -75,10 +75,12 @@ namespace Inkwave.Dev
             Inkwave.Ctx.on("sub:use", e => { if (e.actor == (object)G.local && su < 4) { su++; subShots.Add((Time.unscaledTime + 0.5f / Time.timeScale, $"sub_{su}a_{e.kind}")); subShots.Add((Time.unscaledTime + 1.4f / Time.timeScale, $"sub_{su}b_{e.kind}")); } });
             // specials: every start / end by id (the local player's own counted apart), and your own at work (0.3 s and
             // 1.5 s after each start, the first two)
-            foreach (var ev in new[] { "special:start", "special:end", "special:shield", "special:sonar" })
+            foreach (var ev in new[] { "special:start", "special:end", "special:shield", "special:sonar", "special:launch", "special:strike", "special:wail" })
                 Inkwave.Ctx.on(ev, e => { count(ev + " " + (e.id ?? "-") + (e.reason != null ? " (" + e.reason + ")" : "")); if (e.actor == (object)G.local && ev == "special:start") count("local special " + e.id); });
             int sp = 0;
             void addShot(float at, string name) { int i = subShots.FindIndex(x => x.at > at); if (i < 0) subShots.Add((at, name)); else subShots.Insert(i, (at, name)); }
+            int tn = 0;   // your Vortex Strike's vortex, 1 s after it lands
+            Inkwave.Ctx.on("special:strike", e => { if (e.actor == (object)G.local && tn < 2) { tn++; addShot(Time.unscaledTime + 1.0f / Time.timeScale, $"special_{tn}c_strike_vortex"); } });
             Inkwave.Ctx.on("special:use", e => { if (e.actor == (object)G.local && sp < 2) { sp++; addShot(Time.unscaledTime + 0.3f / Time.timeScale, $"special_{sp}a_{e.id}"); addShot(Time.unscaledTime + 1.5f / Time.timeScale, $"special_{sp}b_{e.id}"); } });
             int f = 1;
             while (m.state != "playing") yield return null;

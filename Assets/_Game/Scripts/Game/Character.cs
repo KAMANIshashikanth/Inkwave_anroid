@@ -336,6 +336,18 @@ namespace Inkwave
         float kidSY = 1, kidSXZ = 1, sqSY = 1, sqSXZ = 1, kidLift;
         float tumble, tumbleX = 1, tumbleZ, tumbleDrop, _dt;
         bool weaponHidden, subPropHidden; float swipeSide = 1, spinRate, spinAngle;
+        /** hide the held weapon (Howl Box: the speaker is held instead) */
+        public bool hideWeapon
+        {
+            get => weaponHidden;
+            set
+            {
+                weaponHidden = value;
+                if (weapon == null) return;
+                weapon.pivot.gameObject.SetActive(!value);
+                if (weapon.left != null) weapon.left.pivot.gameObject.SetActive(!value);
+            }
+        }
         class Dodge { public float t; public Vector3 dir; public float dur = 0.3f; }
         Dodge dodge;
         float armL, rcP2, rcZ2, dodgeX, dodgeZ = 1, dodgeDur = 0.3f, lockW, spinW, streamW, bombSwap;

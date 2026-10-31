@@ -70,6 +70,7 @@ namespace Inkwave
         }
 
         public void setWeapon(string id) { }
+        public bool hideWeapon { get; set; }
         public void setSub(string kind) { }
 
         public void update(float dt, AnimState s)

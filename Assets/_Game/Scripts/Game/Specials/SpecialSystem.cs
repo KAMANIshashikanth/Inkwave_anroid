@@ -18,6 +18,7 @@
 // the HUD prompt text (with the full HUD), the Boss Battle splash (M7). Later kinds bring their own world objects,
 // Return markers and the cheers.
 using System.Collections.Generic;
+using Inkwave.World;
 using UnityEngine;
 using UnityEngine.Rendering;
 using static Inkwave.Ctx;
@@ -75,6 +76,10 @@ namespace Inkwave
             IMPL["barrage"] = new Barrage();
             IMPL["bubbler"] = new Bubbler();
             IMPL["sonar"] = new Sonar();
+            IMPL["strike"] = new Strike();
+            IMPL["zooka"] = new Zooka();
+            IMPL["wail"] = new Wail();
+            IMPL["blower"] = new Blower();
         }
         /** the behaviour kind (the Bomb Barrage variants all share 'barrage') */
         public static string kindOf(string id) => id != null && Config.SPECIALS.TryGetValue(id, out var d) && d.kind != null ? d.kind : id;
@@ -103,12 +108,14 @@ namespace Inkwave
         public static void play(string name, AudioOpts o = null) => G.audio?.play(name, o);
 
         public readonly List<SpecialWorld> world = new List<SpecialWorld>();
+        readonly HashSet<GameObject> owned = new HashSet<GameObject>();   // things a running special put in the scene (held speaker, guide beam)
+        readonly Material[] _glow = new Material[2];
         class Shield { public Transform t; public Material mat; public float hit, snd; public bool owner; }
         readonly Dictionary<Actor, Shield> shieldMeshes = new Dictionary<Actor, Shield>();
         static Mesh _sphere;
         static Mesh sphereGeo() => _sphere ??= Geo.sphere(1, 40, 28).toMesh("specials-sphere");
-        static readonly int ID_Color = Shader.PropertyToID("_Color"), ID_Time = Shader.PropertyToID("_Time2"),
-            ID_Alpha = Shader.PropertyToID("_Alpha"), ID_Hit = Shader.PropertyToID("_Hit");
+        public static readonly int ID_Color = Shader.PropertyToID("_Color"), ID_Time = Shader.PropertyToID("_Time2"),
+            ID_Alpha = Shader.PropertyToID("_Alpha"), ID_Hit = Shader.PropertyToID("_Hit"), ID_Charge = Shader.PropertyToID("_Charge");
 
         public void clear()
         {
@@ -116,7 +123,12 @@ namespace Inkwave
             world.Clear();
             foreach (var kv in shieldMeshes) disposeShield(kv.Value);
             shieldMeshes.Clear();
+            foreach (var o in owned) if (o != null) destroy(o);
+            owned.Clear();
+            for (int i = 0; i < _glow.Length; i++) { if (_glow[i] != null) destroy(_glow[i]); _glow[i] = null; }
         }
+        public void add(GameObject o) { owned.Add(o); }
+        public void remove(GameObject o) { if (o == null) return; owned.Remove(o); destroy(o); }
 
         // ============================================================================================= lifecycle
         public void start(Actor a, string id)
@@ -187,6 +199,7 @@ namespace Inkwave
         {
             var s = a.specialActive;
             if (s == null) return 0;
+            if (s.id == "blower" && s.data is Blower.State bs) return Mathf.Max(0, 1 - bs.count / s.def.max) * (s.dur > 0 ? Mathf.Max(0, 1 - s.t / s.dur) : 1);
             if (s.dur > 0) return Mathf.Max(0, 1 - s.t / s.dur);
             return 1;
         }
@@ -323,7 +336,149 @@ namespace Inkwave
             }
         }
 
+        // ============================================================================================= strike aiming
+        // Vortex Strike targeting input from the player controller. JS drives a cursor over the opened stage map in canvas
+        // pixels; until the full map exists the cursor is a ground ring the move stick slides (world metres).
+        public void aimMove(Actor a, Vector3 delta)
+        {
+            var s = a.specialActive;
+            if (s == null || s.id != "strike" || !(s.data is Strike.State st) || !st.aiming) return;
+            var B = G.level.bounds;
+            st.target.x = clamp(st.target.x + delta.x, B.minX + 2, B.maxX - 2); st.target.z = clamp(st.target.z + delta.z, B.minZ + 2, B.maxZ - 2);
+        }
+        public void aimConfirm(Actor a) { var s = a.specialActive; if (s != null && s.id == "strike" && s.data is Strike.State st && st.aiming && s.t > 0.25f) st.confirm = true; }
+
         // ============================================================================================= shared helpers
+        public static Vector3? groundBelow(Vector3 p, float maxDown = 30)
+        {
+            var g = G.physics.raycast(new Vector3(p.x, p.y + 0.3f, p.z), new Vector3(0, -1, 0), maxDown, _hit2, true);
+            return g.hit ? g.point : (Vector3?)null;
+        }
+        static readonly Hit _hit2 = new Hit();
+        // special ink counts as turf but never charges the special meter
+        public static float paint(Actor owner, Vector3 pos, float r, int team) { float area = G.paint.splat(pos, r, team, new SplatOpts { seed = random() }); owner?.addTurfNoSpecial(area); return area; }
+        // damage everyone on the other team within `radius` of c (line of sight from c), falloff from dmgMax to dmgMin
+        public static void blast(Actor owner, int team, Vector3 c, float radius, float dmgMax, float dmgMin, string weaponId, float killRadius = 0)
+        {
+            foreach (var e in G.actors.ToArray())
+            {
+                if (e.team == team || !e.alive) continue;
+                Vector3 v = e.pos + Vector3.up * 0.8f;
+                float d = Vector3.Distance(v, c);
+                if (d > radius + 0.3f) continue;
+                if (!G.physics.los(new Vector3(c.x, c.y + 0.35f, c.z), v)) continue;
+                float k = d <= killRadius ? 0 : clamp((d - killRadius) / Mathf.Max(0.01f, radius - killRadius), 0, 1);
+                G.projectiles.applyHit(owner, e, lerp(dmgMax, dmgMin, k * k), weaponId);
+            }
+            G.subs?.damageArea(c, radius, 60, team);   // enemy devices, and special objects through SubSystem → areaHit
+        }
+        // continuous damage (tornado, sound beam): no per-frame hit events, only the splat
+        public static void tickDamage(Actor owner, Actor e, float dmg, string weaponId)
+        {
+            if (!e.alive || e.team == owner.team || e.remote) return;
+            bool killed = e.damage(dmg, owner, weaponId);
+            if (killed) emit("hit", new Ev { attacker = owner, victim = e, damage = dmg, killed = true, weaponId = weaponId });
+        }
+        public static Vector3 fwd(Actor a) => new Vector3(Mathf.Sin(a.aimYaw), 0, Mathf.Cos(a.aimYaw));
+        // three's Object3D.lookAt for a non-camera object (+Z toward dir), with its nudge when dir is straight up / down
+        public static Quaternion lookRot(Vector3 dir)
+        {
+            if (dir.sqrMagnitude < 1e-12f) return Quaternion.identity;
+            dir.Normalize();
+            if (Mathf.Abs(dir.y) > 0.99999f) return Quaternion.LookRotation(dir, dir.y > 0 ? new Vector3(0, 0, -1) : new Vector3(0, 0, 1));
+            return Quaternion.LookRotation(dir, Vector3.up);
+        }
+        public void swapWeapon(Actor a, string kind) { a.character.setWeapon(kind); a.weaponRunner.reset(); }
+        public void restoreWeapon(Actor a) { a.character.setWeapon(a.weaponId); }
+
+        // ---- shared meshes: the swirl funnel (open, 0..1 up +Y), the beam (open, 0..1 along +Z), the flat ring (XZ)
+        static Mesh _funnel, _beam, _ring;
+        public static Mesh funnelGeo() => _funnel ??= Geo.cylinder(1, 1, 1, 28, 12, true).translate(0, 0.5f, 0).toMesh("specials-funnel");
+        public static Mesh beamGeo() => _beam ??= Geo.cylinder(1, 1, 1, 24, 1, true).translate(0, 0.5f, 0).rotateX(Mathf.PI / 2).toMesh("specials-beam");
+        public static Mesh ringGeo()
+        {
+            if (_ring != null) return _ring;
+            const int N = 48; const float r0 = 0.86f, r1 = 1;
+            var v = new Vector3[(N + 1) * 2]; var tri = new int[N * 6];
+            for (int i = 0; i <= N; i++)
+            {
+                float a = i * Mathf.PI * 2 / N, c = Mathf.Cos(a), s = -Mathf.Sin(a);   // counter-clockwise seen from +Y (three winding)
+                v[i * 2] = new Vector3(c * r0, 0, s * r0); v[i * 2 + 1] = new Vector3(c * r1, 0, s * r1);
+            }
+            for (int i = 0; i < N; i++)
+            {
+                int a = i * 2, b = a + 1, c = a + 3, d = a + 2;
+                tri[i * 6] = a; tri[i * 6 + 1] = b; tri[i * 6 + 2] = c; tri[i * 6 + 3] = a; tri[i * 6 + 4] = c; tri[i * 6 + 5] = d;
+            }
+            _ring = new Mesh { name = "specials-ring", vertices = v, triangles = tri };
+            _ring.RecalculateBounds();
+            return _ring;
+        }
+        public static Mesh sphere() => sphereGeo();
+
+        // ---- materials (one per object: they animate their own uniforms); colours are sRGB team colours
+        static Vector4 lin(Color c, float a = 1) { var l = c.linear; return new Vector4(l.r, l.g, l.b, a); }
+        public static Material swirlMat(Color color, float speed = 1.6f, float bottom = 0.35f, float top = 1, float wobble = 0.2f)
+        {
+            var m = new Material(Shader.Find("Inkwave/Fx/Swirl")) { name = "iw-swirl", renderQueue = 3002 };
+            m.SetVector(ID_Color, lin(color)); m.SetFloat("_Speed", speed); m.SetFloat("_Bottom", bottom); m.SetFloat("_Top", top); m.SetFloat("_Wobble", wobble);
+            return m;
+        }
+        public static Material beamMat(Color color)
+        {
+            var m = new Material(Shader.Find("Inkwave/Fx/Beam")) { name = "iw-beam", renderQueue = 3002 };
+            m.SetVector(ID_Color, lin(color));
+            return m;
+        }
+        public static Material bubbleMat(Color color)
+        {
+            var m = new Material(Shader.Find("Inkwave/Fx/Bubble")) { name = "iw-bubble", renderQueue = 3004 };
+            m.SetVector(ID_Color, lin(color));
+            return m;
+        }
+        public static Material tintMat(Color color, float opacity)
+        {
+            var m = new Material(Shader.Find("Inkwave/Fx/Tint")) { name = "iw-tint", renderQueue = 3001 };
+            m.SetVector(ID_Color, lin(color, opacity));
+            return m;
+        }
+        // team glow (the props' lit parts): dark team body, emissive team colour
+        public Material glowMat(int team)
+        {
+            if (_glow[team] == null)
+            {
+                Color c = G.teamColors[team];
+                _glow[team] = CharacterMats.lampMaterial(new Color(c.r * 0.35f, c.g * 0.35f, c.b * 0.35f), 0.35f);
+                CharacterMats.setLamp(_glow[team], c.linear, 1.2f);
+            }
+            return _glow[team];
+        }
+        public static MeshRenderer part(string name, Transform parent, Mesh m, Material mat, bool shadow)
+        {
+            var g = ThreeSpace.create(name, parent);
+            g.AddComponent<MeshFilter>().sharedMesh = m;
+            var r = g.AddComponent<MeshRenderer>(); r.sharedMaterial = mat;
+            r.shadowCastingMode = shadow ? ShadowCastingMode.On : ShadowCastingMode.Off;
+            return r;
+        }
+        // a group from a prop def's geometry (body plastic + team ink + optional glow)
+        public static Transform propMesh(SpecialProps.Def d, int team, Material glow, Transform parent = null)
+        {
+            var g = ThreeSpace.create("prop:" + d.kind, parent).transform;
+            if (d.body != null) part("body", g, d.body, CharacterMats.plastic, true);
+            if (d.ink != null) part("ink", g, d.ink, CharacterMats.ink(G.teamColors[team]), true);
+            if (d.glow != null && glow != null) part("glow", g, d.glow, glow, false);
+            return g;
+        }
+        public static Transform partMesh(Mesh body, Mesh ink, int team, Transform parent)
+        {
+            var g = ThreeSpace.create("part", parent).transform;
+            if (body != null) part("body", g, body, CharacterMats.plastic, true);
+            if (ink != null) part("ink", g, ink, CharacterMats.ink(G.teamColors[team]), true);
+            return g;
+        }
+
+        // ============================================================================================= shared helpers (actor)
         // stand in place: damped drift, gravity, collide (cast animations, aiming)
         public void stand(Actor a, float dt, float damp = 8)
         {

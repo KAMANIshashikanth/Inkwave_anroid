@@ -42,6 +42,7 @@ namespace Inkwave
         public float t, dur, startY;
         public bool ended, endCued;
         public SubDef bomb; public float nextThrow;   // Bomb Barrage: its bomb, the next throw allowed at (G.time)
+        public object data;                           // a kind's own state (Strike.State, Blower.State, …)
         public bool armor, body, inkProof, noSquid, faceMove, aimFace, jumpBack, raise;
         public float? speed, accel, faceYaw;
         public float hang, seat, firing;

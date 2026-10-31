@@ -36,6 +36,7 @@ namespace Inkwave
 
         public PlayerController(Actor actor, CameraRig rig, InputState input) { a = actor; this.rig = rig; this.input = input; }
 
+        bool _strikePull;
         public void update(float dt)
         {
             var inp = input; var s = G.settings;
@@ -114,6 +115,22 @@ namespace Inkwave
             float sy = Mathf.Sin(rig.yaw), cy = Mathf.Cos(rig.yaw);
             // forward = (sy, 0, cy); right = (-cy, 0, sy)
             it.move = new Vector3(sy * mz - cy * mx, 0, cy * mz + sy * mx);
+
+            // Vortex Strike targeting: the move stick slides the target (a ground ring until the full map arrives), fire
+            // launches on a fresh press (a trigger still held from shooting when the special started doesn't count)
+            var spx = a.specialActive;
+            if (spx != null && spx.id == "strike" && spx.data is Strike.State sst && sst.aiming)
+            {
+                G.specials.aimMove(a, it.move * (18 * dt));
+                bool pull = inp.mouse.left || inp.padValue(7) > 0.3f;
+                if (spx.t < 0.05f) _strikePull = pull;
+                if (pull && !_strikePull) G.specials.aimConfirm(a);
+                _strikePull = pull;
+                it.move = Vector3.zero; it.fire = it.jump = it.squid = it.sub = it.special = false;
+                mapHeld = false;
+                computeAim();
+                return;
+            }
 
             it.jump = inp.down("Space") || inp.padButton(0) || inp.touchHeld("jump");
             it.squid = inp.down("ShiftLeft") || inp.down("ShiftRight") || inp.padValue(6) > 0.3f || inp.touchHeld("squid");

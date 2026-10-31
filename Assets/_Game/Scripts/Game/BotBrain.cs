@@ -640,7 +640,7 @@ namespace Inkwave
 
         // driving a running special: most reuse the normal fight aim; these set the trigger / sub / movement they need
         // (the kinds still to port add their cases, the Cheer Orb cheering and the Mega Stamp guard with them)
-        float barrageCd;
+        float barrageCd, blowT;
         void specialCtl(float dt, Intent it, ref Vector3 move, float dist, bool vis)
         {
             var s = a.specialActive;
@@ -651,6 +651,16 @@ namespace Inkwave
                 case "barrage":
                     barrageCd -= dt;
                     if (barrageCd <= 0 && (!fighting || dist < 16)) { it.sub = true; _bombAim = true; barrageCd = 0.35f + random() * 0.3f; }
+                    break;
+                case "zooka":
+                    it.fire = fighting ? vis && dist < 42 : random() < 0.06f;
+                    it.squid = false;
+                    break;
+                case "blower":
+                    blowT += dt;
+                    it.fire = blowT < 0.9f;
+                    if (blowT > 1.4f) blowT = 0;
+                    it.squid = false;
                     break;
             }
         }
