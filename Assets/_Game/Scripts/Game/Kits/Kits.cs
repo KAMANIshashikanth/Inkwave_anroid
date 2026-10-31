@@ -174,6 +174,7 @@ namespace Inkwave
             SUB["tracer"] = new Tracer();
             SUB["boomerang"] = new Boomerang(); BotBrain.THROWN.Add("boomerang");
             SUB["waddle"] = new Waddle(); BotBrain.THROWN.Add("waddle");
+            SUB["torpedo"] = new Torpedo(); BotBrain.THROWN.Add("torpedo");
         }
     }
 }

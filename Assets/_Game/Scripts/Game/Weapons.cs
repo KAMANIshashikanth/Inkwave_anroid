@@ -714,6 +714,8 @@ namespace Inkwave
         public void removeShot(Projectile p) { int i = list.IndexOf(p); if (i < 0) return; list[i] = list[list.Count - 1]; list.RemoveAt(list.Count - 1); pool.Push(p); }
         // a bomb smashed before it goes off: gone, no blast
         public void defuseBomb(Bomb b) { int i = bombs.IndexOf(b); if (i < 0) return; disposeBomb(b); bombs.RemoveAt(i); }
+        // set a live bomb off now (a locked torpedo touching it: the Drip Curtain rule)
+        public void explodeBombNow(Bomb b) { if (!bombs.Contains(b)) return; explodeBomb(b); }
         // turf from a projectile / bomb: counts for the owner, but ink from a special never charges the special meter
         static void credit(bool sp, Actor owner, float area) { if (sp) owner.addTurfNoSpecial(area); else owner.addTurf(area); }
 

@@ -626,6 +626,14 @@ namespace Inkwave
             if (fresh) emit("actor:poisoned", new Ev { actor = e });
         }
 
+        // set off a thrown device where it is (a locked torpedo touching a sticky / seeker)
+        public void blastNow(SubItem it)
+        {
+            if (it == null || it.state == "dead") return;
+            var s = it.sub;
+            blast(it, it.pos, s.radius, s.damageMax, s.damageMin, s.paintRadius, UP);
+            it.state = "dead";
+        }
         // paint + damage enemies (with line of sight) around a blast, like the splat bomb
         void blast(SubItem it, Vector3 center, float radius, float dmgMax, float dmgMin, float paintRadius, Vector3 n)
         {

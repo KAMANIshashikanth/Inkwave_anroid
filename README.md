@@ -61,7 +61,7 @@ A bot plays the local player through a whole match. The run writes screenshots a
 | M0 | Setup, config, event bus, input + touch, three-space bridge, grey box | done |
 | M1 | Playable core on Tidewater Plaza: level, physics, player, camera, ink, squid, Spritzer + bomb, bots, Turf War, HUD | done; phone test passed ("no lag") |
 | M2 | Procedural squidkid (rig + animation) | done for now: model, rig, full animation, weapon models; phone test passed. Faithful material port (cloth graphics, lid/mouth rig, parallax iris) deferred to polish |
-| M3 | All 12 weapons, 15 subs, 19 specials | in progress: all 12 mains done (the 8 built-ins + the 4 kits, smoke PASS each); subs, specials next |
+| M3 | All 12 weapons, 15 subs, 19 specials | in progress: all 12 mains and all 15 subs done (8 built-in mains + 4 kit mains + 10 built-in subs + 5 kit subs, smoke PASS each); specials next |
 | M4 | All 7 stages, props, environment, textures | — |
 | M5 | FX + procedural audio | — |
 | M6 | Menus, HUD, map, locker | — |
@@ -98,7 +98,13 @@ What M3 contains so far:
   - **Tideline Bow** (`Bow.cs`, `BowModel.cs`): three-arrow volleys (flat fan on the ground, upright in the air), lodged arrows that tick and burst, the draw animation (string, limbs, nocked arrows).
   - **Brine Cutlass** (`Blade.cs`, `BladeModel.cs`, `BladeFX.cs`): quick cuts with a crescent of drops + the blade hitbox, the charged overhead cut with lunge and ink wave, the swordsman bot tactics, slash arcs, the charge-lit edge and aura (`Shaders/Fx/BladeFx`, `BladeAura`, Kid kind 14).
   - **Sponge Mitts** (`Mitts.cs`, `MittsModel.cs`): alternating ink fists, the charged leap (trajectory preview, landing telegraph, splash, armour), wall cling, sponge guard, bot pounce / wall tactics; sponge pores (Kid kind 15).
-  - Shared: `Kits.blockShot` / `blockRay` stand in for `subs.js` until it is ported (canopies catch shots and beams); the bot brain's shield layer (flank a held canopy, steer round or break a launched one).
+  - Shared: `Kits.blockShot` / `blockRay` complement `subs.js` (canopies catch shots and beams); the bot brain's shield layer (flank a held canopy, steer round or break a launched one).
   - `KitCapture.Kits` (editor) renders each kit in its key states.
+- **Subs:** `subs.js` is ported complete (`Game/Subs.cs`, 10 built-in subs: Splat Bomb, Cling Charge, Pop Pellet, Skitter Bomb, Echo Orb, Drip Curtain, Twirl Sprinkler, Lurk Mine, Hop Beacon, Murk Bomb), with throw arcs, fuses, painting, damage, per-sub limits, bot throwing and threat warnings. The 5 kit subs live in `Game/Kits/`:
+  - **Shaker Bomb** (`Shaker.cs`): shake-to-charge, up to three hopping blasts, ink trail.
+  - **Waddle Bomb** (`Waddle.cs`): waddles after sensed foes, sense ring, shoot-down.
+  - **Whirl Boomerang** (`Boomerang.cs`): flat out-flight, hover shred, orbit return, burst; readable mesh for its blur.
+  - **Tracer Bolt** (`Tracer.cs`): ricocheting bolt, ink puddles on bounces, marking trail.
+  - **Tide Torpedo** (`Torpedo.cs`): bomb arc, mid-air lock with a dashed team ring, fin unfold and homing swim; locked burst sprays droplets, unlocked burst is a plain bomb; one out at a time. World parts baked into `Resources/KidWeapons/sub_torpedo`, ring shader `Shaders/Fx/LockRing`.
 - **Not ported:** upstream's legacy dualies, slosher and splatling. `WEAPON_SUCCESSOR` maps them to twins, bucket and spinner, and no menu offers them.
 - **Smoke test:** `-smoketest-weapon ID` picks the local player's main weapon. Each run also saves `fire_N.png` frames of your own shots in flight.

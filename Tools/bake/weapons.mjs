@@ -153,6 +153,13 @@ for (const kind of [...W.WEAPON_KINDS, ...W.SPECIAL_WEAPON_KINDS]) {
   put('sub_waddle', 'worldBody', g.body); put('sub_waddle', 'worldInk', g.ink);
   put('sub_waddle', 'legR', g.legs[0]); put('sub_waddle', 'legL', g.legs[1]); put('sub_waddle', 'lamp', g.lamp);
 }
+// Tide Torpedo: the world rig's own parts (kits/torpedo.js buildRig): the hull (unmerged body + ink), one fin
+// re-centred on its hinge (the rig swings four copies), and the propeller re-centred on PROP_AT (Game/Kits/Torpedo.cs)
+{
+  const d = W.getSubDef('torpedo');
+  put('sub_torpedo', 'hullBody', d.hullBody); put('sub_torpedo', 'hullInk', d.hullInk);
+  put('sub_torpedo', 'finLocal', d.finLocal); put('sub_torpedo', 'prop', d.prop);
+}
 for (const kind of W.SUB_KINDS) {
   const d = W.getSubDef(kind);
   const dir = 'sub_' + kind;
