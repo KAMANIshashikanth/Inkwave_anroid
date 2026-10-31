@@ -1,7 +1,7 @@
 // renderer.js's post stack after bloom: the theme's colour grade (GradeShader) and three's OutputPass tone mapping
 // (Khronos PBR Neutral × toneMappingExposure), as one full-screen pass (Shaders/Post/Grade.shader) enqueued on every
-// game camera from RenderPipelineManager.beginCameraRendering — no renderer asset changes. It runs after URP's own post
-// (which then only does bloom, on the tiers that have it, with tonemapping off and HDR grading so nothing clamps).
+// game camera from RenderPipelineManager.beginCameraRendering — no renderer asset changes. URP's own post is off
+// (StageEnvironment.post): its uber pass would sRGB-encode before this pass when it thinks it is the last one.
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;

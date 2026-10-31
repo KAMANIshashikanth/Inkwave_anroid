@@ -13,10 +13,7 @@ Shader "Inkwave/Env/Sea"
 
         HLSLINCLUDE
         #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-        #define MIR float3(1.0, 1.0, -1.0)
-        float _StageTime;
-        float4 uSunDir, uZenith, uSkyMid, uHorizon, uGround, uHorizonGlow, uGlowColor, uGlowParams, uHaze;
-        float uNight;
+        #include "EnvCommon.hlsl"
         float4 uSeaDeep, uSeaShallow, uSeaCrest, uFoamColor, uSunLight, uSeaAmbient, uFoamRect, uDeckFieldRect, uDeckFieldK, uDeckBox;
         float uSunSpec, uWaveStrength;
         TEXTURE2D(uWaveTex); SAMPLER(sampler_uWaveTex);
@@ -74,47 +71,11 @@ Shader "Inkwave/Env/Sea"
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
-            // ---- GLSL_SKY_COMMON
-            float3 skyGradient(float3 d)
-            {
-                float h = d.y;
-                float hp = max(h, 0.0);
-                float t = sqrt(hp);
-                float3 c = lerp(uHorizon.rgb, uSkyMid.rgb, smoothstep(0.0, 0.52, t));
-                c = lerp(c, uZenith.rgb, smoothstep(0.4, 1.0, t));
-                float2 sh = normalize(uSunDir.xz + 1e-5);
-                float2 dh = normalize(d.xz + 1e-5);
-                float az = dot(sh, dh) * 0.5 + 0.5;
-                float band = exp(-hp * uGlowParams.z);
-                c += uHorizonGlow.rgb * band * (0.2 + 0.8 * az * az * az);
-                float sd = max(dot(normalize(float3(d.x, hp, d.z)), uSunDir.xyz), 0.0);
-                c += uGlowColor.rgb * (pow(sd, uGlowParams.x) * uGlowParams.y + pow(sd, 6.0) * uGlowParams.w);
-                float anti = (1.0 - az) * (1.0 - az);
-                c *= lerp(1.0, float3(0.7, 0.74, 0.95), uNight * anti * exp(-hp * 2.5));
-                c = lerp(c, uGround.rgb, smoothstep(0.0, -0.22, h));
-                return c;
-            }
-            float3 hazeColor(float3 d)
-            {
-                float3 h = skyGradient(normalize(float3(d.x, saturate(d.y) * 0.3, d.z)));
-                h = lerp(h, uSkyMid.rgb * 1.08 + uHorizon.rgb * 0.12, 0.22);
-                return lerp(h, uGround.rgb * 1.15 + uSkyMid.rgb * 0.25, smoothstep(-0.02, -0.45, d.y) * 0.75);
-            }
-            float3 applyHaze(float3 col, float3 wp, float3 camPos)
-            {
-                float3 dv = wp - camPos;
-                float dist = length(dv);
-                float3 dir = dv / max(dist, 1e-3);
-                float hf = exp(-max(wp.y, 0.0) / uHaze.z);
-                float f = 1.0 - exp(-dist * uHaze.x * lerp(0.45, 1.0, hf));
-                return lerp(col, hazeColor(dir), min(f, uHaze.y));
-            }
-
             half4 frag(V i) : SV_Target
             {
                 float uTime = _StageTime;
                 float3 P = i.world;
-                float3 camPos = _WorldSpaceCameraPos * MIR;
+                float3 camPos = threeCameraPos();
                 float3 toCam = camPos - P;
                 float dist = length(toCam);
                 float3 Vd = toCam / dist;
@@ -179,7 +140,7 @@ Shader "Inkwave/Env/Sea"
                 float3 foamCol = uFoamColor.rgb * (uSeaAmbient.rgb * 1.3 + uSunLight.rgb * (0.35 + 0.65 * shadow) * 0.6);
                 col = lerp(col, foamCol, foam * detail);
 
-                col = applyHaze(col, P, camPos);
+                col = applyHaze(col, P);
                 return half4(col, 1.0);
             }
             ENDHLSL

@@ -47,6 +47,7 @@ namespace Inkwave.EditorTools
                 var dressing = StageLoader.load(sj);
                 StageEnvironment.apply(sj, sun, cam, true, true);
                 StageEnvironment.envGlobals(sj, dressing.GetComponent<StageOwner>().materials);
+                dressing.GetComponent<StageDecor>()?.setTeamColors(new[] { Ctx.hex("#ff8a14"), Ctx.hex("#2f5bff") });
                 LevelView.setMurals(dressing.GetComponent<StageOwner>().materials.muralTexture(), sj.murals?.table);
             }
             Debug.Log($"[Inkwave] capture: layout {level.layoutHash}, AO {(view.lightmap != null ? "on" : "off")}, texlib {(texlib ? Texlib.size.ToString() : "off")}");

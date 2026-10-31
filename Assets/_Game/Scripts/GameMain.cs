@@ -116,6 +116,7 @@ namespace Inkwave
                 StageEnvironment.apply(sj, sun, cam, G.settings.shadows, G.quality.bloom);
                 var owner = stageDressing.GetComponent<StageOwner>();
                 StageEnvironment.envGlobals(sj, owner.materials);
+                StageDecor.instance?.setTeamColors(G.teamColors);
                 LevelView.setMurals(owner.materials.muralTexture(), sj.murals?.table);
                 return;
             }
@@ -142,6 +143,7 @@ namespace Inkwave
             G.teamHex = new[] { p.a, p.b };
             G.teamColors = new[] { hex(p.a), hex(p.b) };
             LevelView.setTeamColors(G.teamColors[0], G.teamColors[1]);
+            StageDecor.instance?.setTeamColors(G.teamColors);
             G.projectiles?.refreshColors();
             G.subs?.refreshColors();
             foreach (var a in G.actors) a.character.setColor(G.teamColors[a.team]);

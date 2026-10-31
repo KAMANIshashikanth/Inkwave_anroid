@@ -25,7 +25,7 @@ namespace Inkwave.World
         [Serializable] public class MuralRow { public float[] rect, place, fx; }
         [Serializable] public class MuralsJ { public string tex; public MuralRow[] table; }
         [Serializable] public class GradeJ { public float uExposure = 1, uSat = 1, uVib, uContrast = 1, uLift, uVignette; public float[] uShadowTint, uHighTint, bloom; }
-        [Serializable] public class ShaderU { public float[] uColor, uCol; public float uAlpha = 1; }
+        [Serializable] public class ShaderU { public float[] uColor, uCol; public float uAlpha = 1; public TexRefJ uEmblem; }
         [Serializable] public class TexRefJ { public string tex; }
         // environment.js's shared uniforms (this.U) as baked — three-space values; StageEnvironment makes them shader globals
         [Serializable]
@@ -65,10 +65,14 @@ namespace Inkwave.World
         [Serializable] public class GullJ { public float a0, w, cx, cz, r, h, s; }
         [Serializable] public class MooredJ { public string name; public float phase, roll, x, z, yaw, amp; }
         [Serializable] public class AnimJ { public float waterY = -1.6f; public SailJ[] sailboats; public BuoyJ[] buoys; public GullJ[] gulls; public MooredJ[] moored; }
+        [Serializable] public class ClothRecJ { public int team = -1; public float tint; public float[] color; }
+        [Serializable] public class PadJ { public int team; public float[] pos; }
+        [Serializable] public class TeamsJ { public ClothRecJ[] bunting, banners; public int[] flags; public PadJ[] pads; public float spawnBarrier; }
         [Serializable]
         public class StageJ
         {
             public AnimJ anim;
+            public TeamsJ teams;
             public string id, time, theme, quality;
             public float night, exposure = 1, environmentIntensity = 1;
             public FogJ fog;
@@ -93,6 +97,8 @@ namespace Inkwave.World
             return j;
         }
 
+        // drawn instanced by StageDecor (cloth wave + team colours)
+        static readonly HashSet<string> CLOTH = new HashSet<string> { "props:flags", "props:banners", "flags:cloth" };
         // animated in StageEnvironment (environment.js _animate): kept one object per instance
         static readonly HashSet<string> ANIMATED = new HashSet<string> { "Sailboats", "Buoys", "Gulls" };
 
@@ -101,16 +107,24 @@ namespace Inkwave.World
         {
             var root = ThreeSpace.create("stage:" + s.id);
             var mats = new StageMaterials(s);
+            var decor = root.AddComponent<StageDecor>();
+            decor.init(s.teams);
             var meshes = new Dictionary<string, Raw>();
             int tris = 0, objs = 0;
             foreach (var o in s.objects)
             {
                 if (o.mat.Length == 0) continue;
                 var mj = s.materials[o.mat[0]];
-                var mat = mats.get(mj, o);
-                if (mat == null) continue;   // not drawn (depth-only material)
                 if (!meshes.TryGetValue(o.geo, out var raw)) meshes[o.geo] = raw = readIWS($"Stages/{s.id}/geo/{o.geo}");
                 if (raw == null) continue;
+                if (o.instN > 0 && CLOTH.Contains(o.name))
+                {
+                    var cm = mats.cloth(mj, o.name == "flags:cloth");
+                    if (cm != null) { decor.addCloth(o, buildMesh(o.geo, raw), cm); tris += raw.ic / 3 * o.instN; objs++; continue; }
+                }
+                var mat = mats.get(mj, o);
+                if (mat == null) continue;   // not drawn (depth-only material)
+                if (o.name == "spawnPad:face" || o.name == "spawnPad:barrier") decor.addPadMaterial(mat, o.name == "spawnPad:barrier");
                 if (o.instN > 0 && !ANIMATED.Contains(o.name))
                 {
                     // static instances → merged in world (three) space, cut into culling chunks

@@ -284,8 +284,16 @@ try {
     gulls: pick(env.gulls, ['a0', 'w', 'cx', 'cz', 'r', 'h', 's']),
     moored: (env.moored || []).map((m) => ({ name: m.mesh?.name, phase: num(m.phase), roll: num(m.roll), x: num(m.spec?.x), z: num(m.spec?.z), yaw: num(m.spec?.yaw ?? 0), amp: ampAt(m.spec?.x, m.spec?.z) })),
   };
+  // team-coloured dressing (props.js _applyColors / decor.js setTeamColors): per cloth instance its team (-1 = own colour)
+  // and tint toward white; the spawn pads in team order
+  const clothRec = (r) => ({ team: r.team ?? -1, tint: num(r.tint || 0), color: val(r.color) });
+  const teams = {
+    bunting: (kit._flags || []).map(clothRec), banners: (kit._banners || []).map(clothRec),
+    flags: (decor.flags || []).map((f) => f.team),
+    pads: (decor.pads || []).map((p) => ({ team: p.team, pos: val(p.g.position) })), spawnBarrier: num(level.spawnBarrier ?? 0),
+  };
   const out = {
-    id, time, theme, quality, night: num(night),
+    id, time, theme, quality, night: num(night), teams,
     exposure: renderer.toneMappingExposure, toneMapping: 'neutral', grade: val(env.grade) ?? env.grade ?? null,
     environmentIntensity: num(scene.environmentIntensity ?? 1),
     fog: scene.fog ? { color: val(scene.fog.color), near: num(scene.fog.near), far: num(scene.fog.far) } : null,

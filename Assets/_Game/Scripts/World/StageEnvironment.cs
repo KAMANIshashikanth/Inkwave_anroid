@@ -9,8 +9,7 @@
 // default reflection at reflectionIntensity = environmentIntensity.
 // Cubes are baked in three space; Unity's world is three mirrored on Z, so the faces are rearranged on load (+Z ↔ −Z,
 // every face flipped on the axis the mirror reverses).
-// Post as renderer.js: bloom (URP's, on the tiers that have it; tonemapping off, HDR grading so nothing clamps), then
-// the theme's grade + Khronos neutral tone mapping (StageGrade).
+// Post as renderer.js: the theme's grade + Khronos neutral tone mapping (StageGrade); bloom not ported yet.
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -176,23 +175,13 @@ namespace Inkwave.World
         }
 
         // ---- post
+        // URP's own post stays OFF: its uber pass ends with the linear → sRGB conversion when it believes it is last, so
+        // the grade pass after it would encode twice (crushed, over-saturated image). The grade pass is the whole stack.
+        // (renderer.js's bloom — UnrealBloom, medium / high tiers — is not ported yet.)
         static void post(Camera cam, StageLoader.StageJ s, bool bloom)
         {
-            var g = s.grade ?? new StageLoader.GradeJ();
-            if (GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset urp) urp.colorGradingMode = ColorGradingMode.HighDynamicRange;
-            profile = ScriptableObject.CreateInstance<VolumeProfile>();
-            var tm = profile.Add<Tonemapping>(true); tm.mode.Override(TonemappingMode.None);
-            if (bloom)
-            {
-                var bl = profile.Add<Bloom>(true);
-                var b = g.bloom != null && g.bloom.Length >= 3 ? g.bloom : new[] { 0.28f, 0.45f, 2.4f };   // renderer.js BLOOM
-                bl.intensity.Override(b[0]); bl.scatter.Override(Mathf.Clamp01(b[1])); bl.threshold.Override(b[2]);
-            }
-            volumeGo = new GameObject("StagePost");
-            var vol = volumeGo.AddComponent<Volume>();
-            vol.isGlobal = true; vol.priority = 10; vol.sharedProfile = profile;
             var cd = cam.GetUniversalAdditionalCameraData();
-            if (cd != null) cd.renderPostProcessing = bloom;   // URP's post only carries bloom; the grade pass runs regardless
+            if (cd != null) cd.renderPostProcessing = false;
             StageGrade.apply(s);
         }
 

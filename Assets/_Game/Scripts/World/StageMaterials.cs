@@ -2,9 +2,9 @@
 //   MeshStandard / MeshPhysical → lit (base colour × vertex colour × map, roughness, metalness, clear coat, emissive,
 //                                 alpha test, side), MeshBasic → unlit, transparent → alpha / additive blended,
 //   MeshDepthMaterial (custom shadow depth) → not drawn.
-// First-pass stand-ins until their chunks are ported (Task 7 part 2): environment.js patchScenery haze / night glow
-// (HZ_*: plain lit + Unity fog; HZ_GULL's wing flap is ported), the cloth wave (flags: static), the spawn pads' face /
-// barrier and the lighthouse beam (unlit uColor / uCol). The Sea ShaderMaterial → Inkwave/Env/Sea (open-sea port).
+// environment.js patchScenery materials (HZ_*) → Inkwave/Env/Scenery, the Sea ShaderMaterial → Inkwave/Env/Sea.
+// The lighthouse beam → Inkwave/Env/LighthouseBeam, the spawn pads' face / barrier → Inkwave/Env/SpawnPad /
+// SpawnBarrier, cloth (bunting, banners, team flags) → Inkwave/Env/Cloth (drawn instanced by StageDecor).
 // three colours are linear: they are written with SetVector (SetColor would treat them as sRGB).
 using System.Collections.Generic;
 using UnityEngine;
@@ -35,8 +35,38 @@ namespace Inkwave.World
             if (m.type == "MeshDepthMaterial" || m.type == "MeshDistanceMaterial") return null;
             if (m.type == "ShaderMaterial" && m.name == "Sea" && Shader.Find("Inkwave/Env/Sea") != null)
                 return new Material(Shader.Find("Inkwave/Env/Sea")) { name = "stage:sea" };   // env globals: StageEnvironment
+            if (m.type == "ShaderMaterial" && o.name == "LighthouseBeam" && m.uniforms?.uCol != null && m.uniforms.uCol.Length >= 3 && Shader.Find("Inkwave/Env/LighthouseBeam") != null)
+            {
+                var b = new Material(Shader.Find("Inkwave/Env/LighthouseBeam")) { name = "stage:lighthouse-beam", renderQueue = (int)RenderQueue.Transparent + o.renderOrder };
+                b.SetVector("_Col", new Vector4(m.uniforms.uCol[0], m.uniforms.uCol[1], m.uniforms.uCol[2], 1));
+                return b;
+            }
+            if (m.type == "ShaderMaterial" && o.name == "spawnPad:face" && Shader.Find("Inkwave/Env/SpawnPad") != null)
+            {
+                var pm = new Material(Shader.Find("Inkwave/Env/SpawnPad")) { name = "stage:spawn-pad" };
+                var em = texture(m.uniforms?.uEmblem?.tex);
+                if (em != null) pm.SetTexture("_Emblem", em);
+                return pm;
+            }
+            if (m.type == "ShaderMaterial" && o.name == "spawnPad:barrier" && Shader.Find("Inkwave/Env/SpawnBarrier") != null)
+                return new Material(Shader.Find("Inkwave/Env/SpawnBarrier")) { name = "stage:spawn-barrier", renderQueue = (int)RenderQueue.Transparent + o.renderOrder };
             if (shader == null) shader = Shader.Find("Inkwave/Prop");
-            var mat = new Material(shader) { name = $"stage:{m.id}:{m.type}:{o.name}" };
+            // environment.js patchScenery materials (customProgramCacheKey 'inkwave-env:<defines>') → the HZ port
+            bool scenery = m.custom != null && m.custom.StartsWith("inkwave-env:") && Shader.Find("Inkwave/Env/Scenery") != null;
+            var mat = new Material(scenery ? Shader.Find("Inkwave/Env/Scenery") : shader) { name = $"stage:{m.id}:{m.type}:{o.name}" };
+            if (scenery)
+            {
+                bool has(string d) => m.defineList != null && System.Array.IndexOf(m.defineList, d) >= 0;
+                string kw = has("HZ_CITY") ? "HZ_CITY" : has("HZ_TERRAIN") ? "HZ_TERRAIN_SHORE" : has("HZ_WATERLINE") ? "HZ_WATERLINE"
+                          : has("HZ_SHORE") ? "HZ_SHORE" : has("HZ_GULL") ? "HZ_GULL" : null;
+                if (kw != null) mat.EnableKeyword(kw);
+                mat.SetVector("_BaseColor", m.color != null && m.color.Length >= 3 ? new Vector4(m.color[0], m.color[1], m.color[2], 1) : Vector4.one);
+                mat.SetFloat("_UseVC", m.vertexColors ? 1 : 0);
+                mat.SetFloat("_Roughness", m.roughness);
+                mat.SetFloat("_Metallic", m.metalness);
+                mat.SetFloat("_Cull", m.side == 2 ? (float)CullMode.Off : m.side == 1 ? (float)CullMode.Front : (float)CullMode.Back);
+                return mat;
+            }
             Vector4 col = m.color != null && m.color.Length >= 3 ? new Vector4(m.color[0], m.color[1], m.color[2], 1) : Vector4.one;
             float alpha = m.opacity;
             bool unlit = m.type == "MeshBasicMaterial";
@@ -89,6 +119,19 @@ namespace Inkwave.World
                 mat.SetShaderPassEnabled("ShadowCaster", false);
             }
             else if (m.alphaTest > 0) mat.renderQueue = (int)RenderQueue.AlphaTest;
+            return mat;
+        }
+
+        /** props.js clothMaterial / decor.js flagMaterial → Inkwave/Env/Cloth (instanced by StageDecor; not cached) */
+        public Material cloth(StageLoader.MatJ m, bool flag)
+        {
+            var sh = Shader.Find("Inkwave/Env/Cloth");
+            if (sh == null) return null;
+            var mat = new Material(sh) { name = flag ? "stage:flag" : "stage:cloth", enableInstancing = true };
+            var t = texture(m.map);
+            if (t != null) mat.SetTexture("_BaseMap", t);
+            mat.SetFloat("_Roughness", m.roughness);
+            if (flag) mat.EnableKeyword("CLOTH_FLAG");
             return mat;
         }
 
