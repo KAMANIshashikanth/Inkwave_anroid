@@ -31,4 +31,4 @@
 - Captures: `Builds/Smoke/t2-torpedo/sub_1a_torpedo.png`, `sub_1b_torpedo.png` show the torpedo; `sub_1b` also shows the dashed lock ring on the target's feet. Full match frames in `Builds/Smoke/t2-torpedo/`
 - Phone: not required for this task
 - Known gaps / deviations from the JS: the C# loads the four world parts directly with `WeaponModel.loadMesh("sub_torpedo/...")` and keeps its own `YC = 0.034` constant instead of extending `WeaponModel.SubDef`; this avoids global-sub loader side effects. Net ghosts omitted (offline only). No `sub:land` / `sub:end` events (JS emits none). The smoke screenshots show the torpedo small at its 1.9x world scale, as in the web. `Tools/bake/weapons.mjs` re-bakes the four new parts (233 meshes, 7.91 MB total).
-- Commit: pending
+- Commit: 8f3f45e
