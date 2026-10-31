@@ -12,8 +12,7 @@
 //   G.subs.clear()
 //
 // Props come from WeaponModel.getSubDef(kind) (origin at the bottom centre, +Y away from the surface, +Z forward).
-// Not ported: the online ghosts (netGhost / netHurt: offline only), the Boss Battle splash (M7), specials.js areaHit
-// (with that module).
+// Not ported: the online ghosts (netGhost / netHurt: offline only), the Boss Battle splash (M7).
 using System.Collections.Generic;
 using Inkwave.World;
 using UnityEngine;
@@ -748,7 +747,7 @@ namespace Inkwave
         }
         public void damageArea(Vector3 c, float radius, float dmg, int team)
         {
-            // (specials.js areaHit: bubbles and tanks in the blast — with that module)
+            G.specials?.areaHit(c, radius, dmg, team);   // special objects (bubbles, tanks) in the blast
             foreach (var k in Kits.SUB.Values) k.damageArea(c, radius, dmg, team);   // kit subs caught in a blast (torpedo)
             foreach (var it in items)
             {

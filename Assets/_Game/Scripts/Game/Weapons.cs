@@ -146,15 +146,16 @@ namespace Inkwave
                     else auto(dt, inp, Config.WEAPONS["shooter"]);   // a kit not ported yet fires as the Spritzer
                     break;
             }
-            // ---- sub weapon (the actor's own: the Splat Bomb here, everything else via G.subs). (Bomb Barrage — its bomb, no
-            // ink, as fast as its throw gap allows — arrives with specials.js.)
-            var sub = a.sub ?? Config.SUBS["bomb"];
+            // ---- sub weapon (the actor's own: the Splat Bomb here, everything else via G.subs). Bomb Barrage: its bomb,
+            // no ink, as fast as its throw gap allows
+            var bar = a.specialActive != null && a.specialActive.kind == "barrage" ? a.specialActive : null;
+            var sub = bar != null ? bar.bomb : a.sub ?? Config.SUBS["bomb"];
             var SK = Kits.sub(sub.kind);
             if (aimingSub && SK != null) SK.hold(this, dt, inp, sub);   // charge-up subs
             if (inp.sub && !aimingSub)
             {
                 aimingSub = true;
-                if (a.ink < sub.inkCost && a.isLocal) { G.audio?.play("low_ink"); emit("lowink", new Ev { actor = a, need = sub.inkCost }); }
+                if (bar == null && a.ink < sub.inkCost && a.isLocal) { G.audio?.play("low_ink"); emit("lowink", new Ev { actor = a, need = sub.inkCost }); }
             }
             if (aimingSub) a.fireFacing = 0.3f;
             if (inp.subReleased && aimingSub)
@@ -163,9 +164,10 @@ namespace Inkwave
                 // "Can't use": a kit sub that only allows one out at a time (or similar) refuses the throw, ink untouched
                 bool refused = SK != null && SK.blocked(a, sub);
                 if (refused) emit("sub:cantuse", new Ev { actor = a, kind = sub.kind });
-                if (!refused && a.ink >= sub.inkCost)
+                bool ok = !refused && (bar != null ? G.time >= bar.nextThrow : a.ink >= sub.inkCost);
+                if (ok)
                 {
-                    a.ink -= sub.inkCost;
+                    if (bar != null) bar.nextThrow = G.time + bar.def.gap; else a.ink -= sub.inkCost;
                     a.lastFire = 0;
                     a.character.trigger("throw");
                     if (sub.kind == "bomb") G.projectiles.throwBomb(a); else G.subs.use(a, sub);
@@ -969,8 +971,9 @@ namespace Inkwave
             var hit = G.physics.raycast(m, dir, range, _hit, true);
             bool wallHit = hit.hit;
             float len = wallHit ? hit.dist : range;
-            // enemy canopies and ink curtains stop the beam (specials.js rayHit — bubbles, tanks — with that module)
+            // enemy canopies and ink curtains stop the beam; so do special objects (bubbles, tanks)
             { float cut = G.subs.blockRay(m, dir, len, a.team, dmg); if (cut < len) { len = cut; wallHit = false; } }
+            if (G.specials != null) { float cut = G.specials.rayHit(m, dir, len, a.team, dmg, a); if (cut < len) { len = cut; wallHit = false; } }
             // first enemy along the beam
             Actor victim = null; float victimD = 0;
             foreach (var e in G.actors)
@@ -1369,9 +1372,9 @@ namespace Inkwave
                     dead = true; break;
                 }
             }
-            // enemy ink curtains, devices (sprinklers, beacons) and canopies catch shots (specials.js shotHit — bubbles, tanks —
-            // with that module)
+            // enemy ink curtains, devices (sprinklers, beacons) and canopies catch shots; so do special objects (bubbles, tanks)
             if (!dead && G.subs.blockShot(p.prev, p.pos, p.team, p.damage > 0 ? p.damage : 10)) dead = true;
+            if (!dead && G.specials != null && G.specials.shotHit(p.prev, p.pos, p.team, p.damage > 0 ? p.damage : 10, p.owner)) dead = true;
             // world
             if (!dead)
             {
@@ -1437,7 +1440,7 @@ namespace Inkwave
                 if (!G.physics.los(c, ep)) continue;
                 applyHit(p.owner, e, lerp(dmgMax, dmgMin, d / splashRadius), p.weaponId ?? "blaster");
             }
-            // (specials.js areaHit: bubbles and tanks in the burst — with that module)
+            G.specials?.areaHit(c, splashRadius, dmgMin, p.team, p.owner);   // special objects (bubbles, tanks) in the burst
         }
 
         void updateBombs(float dt)
@@ -1574,7 +1577,7 @@ namespace Inkwave
         // (60 Hz semi-implicit Euler), one vertex every 2 steps → exact landing.
         public void updateArc(Actor a, bool show)
         {
-            var sub = a?.sub ?? Config.SUBS["bomb"];
+            var sub = a?.specialActive?.bomb ?? a?.sub ?? Config.SUBS["bomb"];
             // placed subs have no throw; noArc: kit subs that draw their own aim guide (tracer)
             if (!show || a == null || !a.alive || sub.placed || (Kits.sub(sub.kind)?.noArc ?? false))
             {

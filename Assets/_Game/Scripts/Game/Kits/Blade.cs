@@ -334,7 +334,7 @@ namespace Inkwave
             // (Boss Battle: the crescent cuts HULLBREAKER / a crablet once on its way through — M7)
             // shields, curtains, devices and bubbles catch it; walls break it
             bool stop = false;
-            if (G.subs.blockShot(Wv.prev, Wv.pos, Wv.team, dmg)) { endWave(Wv, Wv.pos, -Wv.dir); stop = true; }
+            if (G.subs.blockShot(Wv.prev, Wv.pos, Wv.team, dmg) || (G.specials?.shotHit(Wv.prev, Wv.pos, Wv.team, dmg, Wv.owner) ?? false)) { endWave(Wv, Wv.pos, -Wv.dir); stop = true; }
             if (!stop)
             {
                 var hit = G.physics.segment(Wv.prev, Wv.pos, _hit, true);

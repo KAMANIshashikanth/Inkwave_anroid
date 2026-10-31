@@ -10,7 +10,7 @@
 // While the button is held the local player sees a thin guide: the true launch line to the first bounce, then the
 // first rebound, so the low angle is learnable.
 // The bolt model is baked from tracer.js's own builder (sub_tracer: body, ink, glowing core). Trail: Shaders/Fx/Trail.
-// Not ported: the online ghosts, specials.js shotHit (with that module), the sounds (M5: by name).
+// Not ported: the online ghosts, the sounds (M5: by name).
 using System.Collections.Generic;
 using Inkwave.World;
 using UnityEngine;
@@ -245,8 +245,8 @@ namespace Inkwave
                     directHit(b, best);
                     return;
                 }
-                // enemy curtains / shields / devices stop it (specials.js shotHit — bubbles — with that module)
-                if (G.subs.blockShot(b.pos, end, b.team, s.directDamage))
+                // enemy curtains / shields / devices / special objects (bubbles) stop it
+                if (G.subs.blockShot(b.pos, end, b.team, s.directDamage) || (G.specials?.shotHit(b.pos, end, b.team, s.directDamage, b.owner) ?? false))
                 {
                     b.pos = end; addPoint(b);
                     endBolt(b, "blocked");

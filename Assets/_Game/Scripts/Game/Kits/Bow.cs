@@ -219,7 +219,7 @@ namespace Inkwave
             }
             // (Boss Battle: HULLBREAKER's hit spheres / its crablets take the direct hit — M7)
             // enemy devices / canopies (and special objects) catch arrows; lodging ones stick in them
-            if (!p.noHit && G.subs.blockShot(p.prev, p.pos, p.team, p.dmg))
+            if (!p.noHit && (G.subs.blockShot(p.prev, p.pos, p.team, p.dmg) || (G.specials?.shotHit(p.prev, p.pos, p.team, p.dmg, p.owner) ?? false)))
             {
                 if (p.lodge) lodge(p, p.pos, -p.dir, p.dir); else kill(i);
                 return;

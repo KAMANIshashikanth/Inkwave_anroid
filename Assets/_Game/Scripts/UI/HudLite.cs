@@ -235,7 +235,7 @@ namespace Inkwave
             {
                 inkFill.fillAmount = loc.ink / PLAYER.inkMax;
                 inkFill.color = loc.ink < 18 ? Color.Lerp(G.teamColors[loc.team], Color.white, Mathf.PingPong(Time.time * 4, 1)) : G.teamColors[loc.team];
-                specialFill.fillAmount = loc.specialFrac();
+                specialFill.fillAmount = loc.specialActive != null && G.specials != null ? G.specials.remaining(loc) : loc.specialFrac();   // a running special drains it
                 specialFill.color = loc.specialReady() ? Color.Lerp(new Color(1, 0.85f, 0.2f), Color.white, Mathf.PingPong(Time.time * 3, 1)) : new Color(1, 0.85f, 0.2f);
                 hpFill.fillAmount = loc.hp / PLAYER.hp;
                 var c = m.controller;

@@ -88,7 +88,7 @@ namespace Inkwave
                     var style = isLocal ? new CharacterStyle.Style() : CharacterStyle.randomStyle(() => UnityEngine.Random.value);
                     // subs: yours from the loadout; bots carry a random one (about half keep their weapon's default)
                     string sub = isLocal ? o.sub : random() < 0.5f ? null : subs[(int)(random() * subs.Length)];
-                    string weapon = weapons[s], special = null;
+                    string weapon = weapons[s], special = isLocal ? o.special : null;
                     if (rosterRng != null && (!isLocal || o.autopilot))
                     {
                         weapon = Config.WEAPON_ORDER[(int)(rosterRng() * Config.WEAPON_ORDER.Length)];

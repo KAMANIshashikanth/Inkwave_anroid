@@ -204,13 +204,14 @@ namespace Inkwave
             float wantYaw = wantMove ? Mathf.Atan2(move.x, move.z) : a.yaw;
             float wantPitch = -0.1f;
             bool enemyVisible = target != null && seeTimer > 0;
-            float idealYaw = 0, idealPitch = 0, aimDist = 6;
+            float idealYaw = 0, idealPitch = 0, aimDist = 6, fightDist = 0;
 
             if ((mode == "fight" || mode == "retreat") && target != null)
             {
                 var tg = target;
                 float dx = tg.pos.x - a.pos.x, dz = tg.pos.z - a.pos.z;
                 float dist = Mathf.Sqrt(dx * dx + dz * dz);
+                fightDist = dist;
                 float range = rangeOf();
                 // lead the target by the projectile's time to arrive
                 float spd = w.projSpeed > 0 ? w.projSpeed : w.speedMax > 0 ? w.speedMax : w.throwSpeed > 0 ? w.throwSpeed : 30;
@@ -379,7 +380,8 @@ namespace Inkwave
                     wantPitch = -1.0f;
                 }
             }
-            // (M3: running specials — specialCtl — with specials.js)
+            // ---------------- running specials
+            specialCtl(dt, it, ref move, fightDist, enemyVisible);
             // ---------------- enemy devices after us (with the kit subs); enemy launched canopies in the way: steer round the
             // nearer edge (or break one we're boxed in by)
             var thrAim = threatCtl(dt, it, ref move);
@@ -602,13 +604,55 @@ namespace Inkwave
             repath = 1.0f;
         }
 
-        // when to fire off the special (M1: every special plays as the Tidal Slam)
+        // when to fire off the special (fight: distance to the target; paint: only the turf-claiming ones). A special not
+        // ported yet plays as Tidal Slam, so it is used like one.
+        static readonly HashSet<string> TURF_SPECIALS = new HashSet<string> { "storm", "strike", "booyah", "barrage", "sonar", "kraken", "crab", "zooka", "blower", "stamp" };
         bool wantSpecial(string m, float dist, bool vis)
         {
-            if (m == "fight") return dist < 4.5f;
-            if (random() > 0.012f) return false;
+            string id = SpecialSystem.kindOf(SpecialSystem.resolve(a.specialId));
+            float r = random();
+            if (m == "fight")
+            {
+                switch (id)
+                {
+                    case "slam": return dist < 4.5f;
+                    case "storm": return dist < 16;
+                    case "barrage": return dist < 14;
+                    case "bubbler": return dist < 12 && (a.lastDamage < 0.6f || r < 0.02f);
+                    case "sonar": return r < 0.02f;
+                    case "strike": return dist > 14 && r < 0.01f;
+                    case "zooka": return vis && dist > 7 && dist < 36;
+                    case "wail": return vis && dist > 5 && dist < 40;
+                    case "kraken": return dist < 10;
+                    case "blower": return dist < 14;
+                    case "jetpack": return dist > 5 && dist < 22;
+                    case "stamp": return dist < 9;
+                    case "booyah": return dist > 9 && dist < 26 && r < 0.03f;
+                    case "zipcaster": return dist < 16;
+                    case "crab": return dist < 20;
+                }
+                return false;
+            }
+            if (!TURF_SPECIALS.Contains(id) || r > 0.012f) return false;
             var st = G.paint.regionStats(a.pos.x, a.pos.y, a.pos.z, 6, a.team, _stats);
             return st.own < 0.55f;
+        }
+
+        // driving a running special: most reuse the normal fight aim; these set the trigger / sub / movement they need
+        // (the kinds still to port add their cases, the Cheer Orb cheering and the Mega Stamp guard with them)
+        float barrageCd;
+        void specialCtl(float dt, Intent it, ref Vector3 move, float dist, bool vis)
+        {
+            var s = a.specialActive;
+            if (s == null) return;
+            bool fighting = mode == "fight" && target != null;
+            switch (s.kind ?? s.id)
+            {
+                case "barrage":
+                    barrageCd -= dt;
+                    if (barrageCd <= 0 && (!fighting || dist < 16)) { it.sub = true; _bombAim = true; barrageCd = 0.35f + random() * 0.3f; }
+                    break;
+            }
         }
 
         // Mid-duel sub use (enemy in view at `dist`). Sets the cooldown and returns true to throw this frame.

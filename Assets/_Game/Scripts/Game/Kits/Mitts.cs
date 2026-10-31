@@ -121,7 +121,7 @@ namespace Inkwave
                 if (d > w.splashRadius || !G.physics.los(at, v)) continue;
                 G.projectiles.applyHit(o, e, lerp(w.splashMax, w.splashMin, clamp(d / w.splashRadius, 0, 1)), "mitts");
             }
-            // (specials.js areaHit: bubbles and tanks in the burst — with that module; Boss Battle splash — M7)
+            G.specials?.areaHit(at, w.splashRadius, w.splashMin, f.team, o);   // (Boss Battle splash — M7)
             Color col = o.color;
             if (o.isLocal || near(at, 26))
             {
@@ -167,6 +167,7 @@ namespace Inkwave
             // (Boss Battle: HULLBREAKER's hit spheres / its crablets — M7)
             // enemy canopies / curtains / devices / special objects catch it (and it bursts there)
             if (!dead && G.subs.blockShot(f.prev, f.pos, f.team, w.punchDamage)) { burstFist(f, f.pos, null, null); dead = true; }
+            if (!dead && G.specials != null && G.specials.shotHit(f.prev, f.pos, f.team, w.punchDamage, f.owner)) { burstFist(f, f.pos, null, null); dead = true; }
             // the level
             if (!dead)
             {
@@ -407,7 +408,7 @@ namespace Inkwave
                 if (d > w.landRadius || !G.physics.los(c, v)) continue;
                 G.projectiles.applyHit(a, e, lerp(w.landDamageMax, w.landDamageMin, clamp((d - 0.6f) / (w.landRadius - 0.6f), 0, 1)), "mitts");
             }
-            // (specials.js areaHit / Boss Battle splash — with those modules)
+            G.specials?.areaHit(c, w.landRadius, w.landDamageMin, a.team, a);   // (Boss Battle splash — M7)
             landFx(a, at, n, c);
             emit("mitts:land", new Ev { actor = a, pos = c, normal = n, radius = w.landRadius });
             Actor.rumble(a, 0.45f, 0.5f, 160);

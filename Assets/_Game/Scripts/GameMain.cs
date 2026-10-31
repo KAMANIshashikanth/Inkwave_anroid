@@ -30,6 +30,7 @@ namespace Inkwave
         public static string startSub;      // … and sub (-smoketest-sub; default: the weapon's own)
         public static bool randomRoster;    // -smoketest-roster random: every bot gets a random weapon / sub / special
         public static int rosterSeed;       // the roster's RNG seed (logged in summary.txt so a run can be replayed)
+        public static string startSpecial;  // the local player's special (-smoketest-special; default: the weapon's own)
 
         void Awake()
         {
@@ -50,6 +51,7 @@ namespace Inkwave
             G.fx = new Fx();
             G.audio = new AudioSys();
             Kits.init();   // kits/index.js: the kit weapons register themselves
+            SpecialSystem.init();
             if (cam == null) cam = Camera.main;
             applyRenderQuality(touchMode);
         }
@@ -87,6 +89,7 @@ namespace Inkwave
             setPalette(G.settings.colorblind ? Config.COLORBLIND_PALETTE : Config.TEAM_PALETTES[(int)(random() * Config.TEAM_PALETTES.Length)]);
             G.projectiles = new Projectiles();
             G.subs = new SubSystem();
+            G.specials = new SpecialSystem();
             G.rig = new CameraRig();
             buildEnvironment();
             Debug.Log($"[Inkwave] stage {layout.id}: {level.blocks.Count} blocks, {level.renderTris} tris, atlas {G.paint.size} @ {G.paint.ppm:0.0} ppm, nav {G.nav.validIds.Count}/{G.nav.nodes.Count} nodes");
@@ -130,6 +133,7 @@ namespace Inkwave
             G.paint.clear();
             G.projectiles.clear();
             G.subs.clear();
+            G.specials.clear();
             var m = new Match(new MatchOpts
             {
                 duration = matchSeconds > 0 ? matchSeconds : G.settings.matchLength,
@@ -137,6 +141,7 @@ namespace Inkwave
                 autopilot = autopilot,
                 weapon = startWeapon != null && Config.WEAPONS.ContainsKey(startWeapon) ? startWeapon : "shooter",
                 sub = startSub,
+                special = startSpecial,
                 input = G.input, rig = G.rig,
             });
             G.match = m;
@@ -224,7 +229,7 @@ namespace Inkwave
                 m.updateController(dt);
                 int sub = dt > 1 / 45f ? 2 : 1;   // substep physics on slow frames
                 for (int i = 0; i < sub; i++) m.update(dt / sub);
-                if (!m.paused) { G.projectiles.update(dt); G.subs.update(dt); }
+                if (!m.paused) { G.projectiles.update(dt); G.subs.update(dt); G.specials.update(dt); }
                 if (m.state == "playing" && m.local != null && m.local.alive && G.rig.mode != "follow" && G.rig.mode != "path") G.rig.follow(m.local, true);
             }
             G.fx.update(dt);

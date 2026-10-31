@@ -27,6 +27,7 @@ namespace Inkwave.Dev
             GameMain.matchSeconds = float.TryParse(Arg("-smoketest-seconds"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var s) ? s : 60;
             GameMain.startWeapon = Arg("-smoketest-weapon");
             GameMain.startSub = Arg("-smoketest-sub");
+            GameMain.startSpecial = Arg("-smoketest-special");
             if (Arg("-smoketest-roster") == "random")
             {
                 GameMain.randomRoster = true;
@@ -72,6 +73,13 @@ namespace Inkwave.Dev
             // …and of your own subs at work (0.5 s and 1.4 s after each use, the first four uses)
             var subShots = new System.Collections.Generic.List<(float at, string name)>(); int su = 0;
             Inkwave.Ctx.on("sub:use", e => { if (e.actor == (object)G.local && su < 4) { su++; subShots.Add((Time.unscaledTime + 0.5f / Time.timeScale, $"sub_{su}a_{e.kind}")); subShots.Add((Time.unscaledTime + 1.4f / Time.timeScale, $"sub_{su}b_{e.kind}")); } });
+            // specials: every start / end by id (the local player's own counted apart), and your own at work (0.3 s and
+            // 1.5 s after each start, the first two)
+            foreach (var ev in new[] { "special:start", "special:end", "special:shield", "special:sonar" })
+                Inkwave.Ctx.on(ev, e => { count(ev + " " + (e.id ?? "-") + (e.reason != null ? " (" + e.reason + ")" : "")); if (e.actor == (object)G.local && ev == "special:start") count("local special " + e.id); });
+            int sp = 0;
+            void addShot(float at, string name) { int i = subShots.FindIndex(x => x.at > at); if (i < 0) subShots.Add((at, name)); else subShots.Insert(i, (at, name)); }
+            Inkwave.Ctx.on("special:use", e => { if (e.actor == (object)G.local && sp < 2) { sp++; addShot(Time.unscaledTime + 0.3f / Time.timeScale, $"special_{sp}a_{e.id}"); addShot(Time.unscaledTime + 1.5f / Time.timeScale, $"special_{sp}b_{e.id}"); } });
             int f = 1;
             while (m.state != "playing") yield return null;
             yield return new WaitForSecondsRealtime(2.5f / ts);
@@ -92,9 +100,9 @@ namespace Inkwave.Dev
             yield return Shot($"{k:00}_results");
             var cov = m.result.coverage;
             Log($"result: alpha {cov.x * 100:0.0}% bravo {cov.y * 100:0.0}% winner {(m.result.winner == 0 ? "alpha" : "bravo")}");
-            foreach (var a in m.actors) Log($"  {a.name,-10} team {a.team} {a.weaponId,-8} {a.subId,-9} {a.specialId,-12} turf {a.stats.turf,6:0} splats {a.stats.splats} deaths {a.stats.deaths}");
+            foreach (var a in m.actors) Log($"  {a.name,-10} team {a.team} {a.weaponId,-8} {a.subId,-9} {a.specialId,-12} turf {a.stats.turf,6:0} splats {a.stats.splats} deaths {a.stats.deaths} specials {a.stats.specials}");
             { var B = Brolly.STATS; if (B.blasts > 0) Log($"brolly: blasts {B.blasts} opens {B.opens} blocked {B.blocked} ({B.blockedDmg:0} dmg) launches {B.launches} breaks {B.breaks} guarded {B.guarded}"); }
-            foreach (var kv in subN) Log($"subs: {kv.Key} x{kv.Value}");
+            foreach (var kv in subN) Log($"{(kv.Key.StartsWith("special") || kv.Key.StartsWith("local special") ? "specials" : "subs")}: {kv.Key} x{kv.Value}");
             { if (BotBrain.THREAT_STATS.noticed > 0) Log($"threats: noticed {BotBrain.THREAT_STATS.noticed} shoot {BotBrain.THREAT_STATS.shoot} evade {BotBrain.THREAT_STATS.evade} swim {BotBrain.THREAT_STATS.swim} sidestep {BotBrain.THREAT_STATS.sidestep} gone {BotBrain.THREAT_STATS.gone}"); }
             if (SubSystem.beaconLandings > 0) Log($"subs: beacon landings x{SubSystem.beaconLandings}");
             Log($"fps: avg {fpsSum / Mathf.Max(1, fpsN):0.0} min {fpsMin:0.0}  errors {errors}");

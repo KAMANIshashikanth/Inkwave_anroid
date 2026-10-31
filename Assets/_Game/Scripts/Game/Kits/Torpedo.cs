@@ -319,7 +319,8 @@ namespace Inkwave
             }
             return null;
         }
-        static bool touchDevice(Item t) => G.subs?.blockShot(t.prev, t.pos, t.team, 0) ?? false;
+        // enemy curtains, shields, sprinklers, beacons, bubbles … count as surfaces (the probe does no damage)
+        static bool touchDevice(Item t) => (G.subs?.blockShot(t.prev, t.pos, t.team, 0) ?? false) || (G.specials?.shotHit(t.prev, t.pos, t.team, 0, t.owner) ?? false);
 
         static void lethalContact(Item t)
         {

@@ -12,8 +12,8 @@
 //  · facing: angular spring with a rate cap (turnRate is fed to the animation)
 //  · jump buffer + coyote time, apex hang, hard-landing recovery, fire buffer across form changes
 //
-// M1: the specials module (src/game/specials.js) and the kit weapons are not ported yet — Tidal Slam stands in for
-// every special, and the kit hooks are absent.
+// Specials: Tidal Slam and Ink Tempest run here; every other special runs through G.specials (Specials/SpecialSystem.cs),
+// and one whose kind is not ported yet plays as Tidal Slam (SpecialSystem.resolve).
 using System.Collections.Generic;
 using Inkwave.World;
 using UnityEngine;
@@ -38,7 +38,10 @@ namespace Inkwave
     public class SpecialState
     {
         public string id, phase, kind;
-        public float t, startY;
+        public SpecialDef def;
+        public float t, dur, startY;
+        public bool ended, endCued;
+        public SubDef bomb; public float nextThrow;   // Bomb Barrage: its bomb, the next throw allowed at (G.time)
         public bool armor, body, inkProof, noSquid, faceMove, aimFace, jumpBack, raise;
         public float? speed, accel, faceYaw;
         public float hang, seat, firing;
@@ -219,6 +222,7 @@ namespace Inkwave
             if (!alive || amount <= 0) return false;
             if (invuln > 0) return false;
             if (specialActive != null && specialActive.armor) amount *= 0.25f;
+            if (G.specials != null) { amount = G.specials.filterDamage(this, amount, attacker, source); if (!(amount > 0)) return false; }
             { var K = Kits.main(weapon?.kind); if (K != null) { amount = K.damageTaken(weaponRunner, amount, attacker, source); if (!(amount > 0)) return false; } }   // kit armour (e.g. the mitts' leap)
             hp -= amount;
             lastDamage = 0;
@@ -253,6 +257,7 @@ namespace Inkwave
             // from that share of full (its points were spent when it started). Carried through respawn().
             float keep = PLAYER.specialKeepOnSplat;
             special = specialActive != null ? specialCost() * keep : Mathf.Min(specialCost(), special) * keep;
+            G.specials?.onSplat(this);
             specialActive = null;
             climbing = false;
             weaponRunner.onDeath();
@@ -343,6 +348,7 @@ namespace Inkwave
             updateClimb(dt, isSquid);
 
             // ---- horizontal movement (a twins dodge roll owns it while it lasts)
+            if (spx != null) G.specials.move(this, spx, dt);
             if (!climbing) horizontal(dt, isSquid, enemyInk);
             if (weaponRunner.dodgeVelocity(out var dv)) { vel.x = dv.x; vel.z = dv.z; }
 
@@ -412,9 +418,11 @@ namespace Inkwave
             }
             var winp = new WeaponInput { fire = fire, firePressed = pressed, sub = intent.sub && !isSquid, subReleased = subReleased && !isSquid };
             float inkBefore = ink;
-            weaponRunner.update(dt, winp);
+            // specials that replace the main weapon (zooka, stamp, blower, crab …) take the trigger; others may take the sub
+            if (!(spx != null && G.specials.weapon(this, spx, dt, winp))) weaponRunner.update(dt, winp);
             // sonar-revealed players burn ink faster
             if (st.reveal > 0 && ink < inkBefore) ink = Mathf.Max(0, ink - (inkBefore - ink) * (Config.SPECIALS["sonar"].inkMul - 1));
+            if (specialActive != null) G.specials.tick(this, specialActive, dt);
             if (!alive) return;
 
             // ---- fall into the sea
@@ -615,7 +623,7 @@ namespace Inkwave
         }
 
         // Body (walls/ceilings) then feet (ground stick / landing). `stick` = we were grounded and did not jump.
-        void resolve(bool isSquid, float prevY, bool stick)
+        public void resolve(bool isSquid, float prevY, bool stick)
         {
             float lift = isSquid ? PLAYER.squidBodyLift : PLAYER.stepUp;
             float height = isSquid ? PLAYER.squidHeight : PLAYER.height;
@@ -914,28 +922,53 @@ namespace Inkwave
         }
 
         // ------------------------------------------------------------------ specials
-        // (M1: the specials module is not ported yet — every special plays as the actor-owned Tidal Slam)
         void startSpecial()
         {
+            string id = SpecialSystem.resolve(specialId);   // its own special, or Tidal Slam while that kind isn't ported
             special = 0;
             stats.specials++;
             ink = PLAYER.inkMax;          // every special refills your tank
             form = "kid";
             setClimb(false);
-            emit("special:use", new Ev { actor = this, id = "slam" });
+            weaponRunner.endDodge();      // a twins roll (or its planted lock) never carries into the special
+            emit("special:use", new Ev { actor = this, id = id });
             G.audio?.play("special_activate", new AudioOpts { pos = isLocal ? (Vector3?)null : pos, volume = isLocal ? 1 : 0.7f });
             rumble(this, 0.25f, 0.45f, 120);
-            specialActive = new SpecialState { id = "slam", t = 0, phase = "rise", armor = true, body = true, startY = pos.y };
-            vel = new Vector3(vel.x * 0.3f, 11.5f, vel.z * 0.3f);
-            grounded = false;
-            character.trigger("special_leap");
+            if (id != "slam" && id != "storm") { G.specials.start(this, id); return; }
+            if (id == "slam")
+            {
+                specialActive = new SpecialState { id = id, t = 0, phase = "rise", armor = true, body = true, startY = pos.y };
+                vel = new Vector3(vel.x * 0.3f, 11.5f, vel.z * 0.3f);
+                grounded = false;
+                character.trigger("special_leap");
+            }
+            else
+            {
+                specialActive = new SpecialState { id = id, t = 0, phase = "throw", armor = false, body = true };
+                character.trigger("throw");
+                G.projectiles.throwStorm(this);
+            }
         }
 
         void updateSpecial(float dt)
         {
             var s = specialActive;
+            if (s.id != "slam" && s.id != "storm") { G.specials.body(this, s, dt); return; }
             s.t += dt;
-            var sp = Config.SPECIALS["slam"];
+            var sp = Config.SPECIALS[s.id];
+            if (s.id == "storm")
+            {
+                // brief throw animation, then control returns
+                if (s.t > 0.35f) specialActive = null;
+                vel.x *= Mathf.Exp(-6 * dt); vel.z *= Mathf.Exp(-6 * dt);
+                bool stick = grounded;
+                if (!stick) vel.y -= PLAYER.gravity * dt; else vel.y = 0;
+                float py0 = pos.y;
+                pos += vel * dt;
+                resolve(false, py0, stick);
+                return;
+            }
+            // slam
             var mv = intent.move;
             if (s.phase == "rise")
             {
@@ -1049,10 +1082,10 @@ namespace Inkwave
             a.grounded = grounded;
             a.vy = vel.y;
             a.aimPitch = aimPitch;
-            a.firing = weaponRunner.firingPose();
+            a.firing = weaponRunner.firingPose() || (specialActive != null && specialActive.firing > 0);
             a.charge = weaponRunner.charge;
             a.rolling = weaponRunner.rolling;
-            a.subAim = weaponRunner.aimingSub;
+            a.subAim = weaponRunner.aimingSub || (specialActive != null && specialActive.raise);      // bomb cocked / orb held up
             a.form = !isSquid ? "kid" : climbing ? "climb" : submerged ? "swim" : "squid";
             if (specialActive != null && (specialActive.body || specialActive.noSquid)) a.form = "kid";
             a.specialId = specialActive?.id;

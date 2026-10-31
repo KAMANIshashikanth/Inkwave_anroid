@@ -91,7 +91,7 @@ namespace Inkwave
             if (st != null && G.time - st.t1 > 0.15f) { drop(a, false); st = null; }   // a stale charge (the hold was interrupted)
             if (st == null) runner.subKit = st = newState(a);
             st.t1 = G.time;
-            bool paid = a.ink >= sub.inkCost;   // (Bomb Barrage — with specials.js)
+            bool paid = (a.specialActive != null && a.specialActive.kind == "barrage") || a.ink >= sub.inkCost;
             bool jump = a.intent.jump, jp = jump && !st.jumpPrev; st.jumpPrev = jump;
             int wag = a.isLocal && !isBot(a) ? waggles(st, a, dt) : 0;
             if (paid && st.meter < 1)
