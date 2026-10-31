@@ -38,7 +38,8 @@ namespace Inkwave.World
         // geometry
         public string kind;                         // 'box' | 'obox' | 'ramp'
         public Vector3 min, max, center, size, low, high;
-        public float rotY, width, thickness = 0.6f;
+        public double rotY;                         // degrees; double so a turned face picks its u axis as JS does (Level: axX)
+        public float width, thickness = 0.6f;
         public bool thin;
         // options
         public string color, tag, onlyIn, notIn;
@@ -110,6 +111,7 @@ namespace Inkwave.World
     public static class MapKit
     {
         public const float D2R = Mathf.PI / 180;
+        public const double D2Rd = System.Math.PI / 180;   // (turn angles: degrees ↔ radians in double, as the JS)
 
         public static BlockDef B(float x0, float x1, float y0, float y1, float z0, float z1, BlockDef o = null)
         {
@@ -127,7 +129,7 @@ namespace Inkwave.World
         }
 
         // box turned about the vertical axis by `deg` degrees: centre (cx, cz), w along its local x, d along its local z
-        public static BlockDef O(float cx, float cz, float w, float dd, float y0, float y1, float deg, BlockDef o = null)
+        public static BlockDef O(float cx, float cz, float w, float dd, float y0, float y1, double deg, BlockDef o = null)
         {
             var d = BlockDef.merge(null, o);
             d.kind = "obox"; d.center = new Vector3(cx, (y0 + y1) / 2, cz); d.size = new Vector3(w, y1 - y0, dd); d.rotY = deg;

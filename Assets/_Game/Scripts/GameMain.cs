@@ -79,12 +79,13 @@ namespace Inkwave
         void buildStage()
         {
             var layout = Tidewater.build();
-            var level = new Level(layout);
+            // the set dressing's solid props join the level (physics, nav, paint, the lightmap layout), as in main.js
+            var level = new Level(layout, StageColliders.load(layout.id));
             G.level = level;
             G.physics = new Physics(level);
             var q = G.quality;
             G.paint = new PaintSystem(level, Mathf.Max(512, q.paintAtlas), q.paintAtlas >= 4096 ? 30 : 18);
-            levelView = new LevelView(level, G.paint, q.id != "low");
+            levelView = new LevelView(level, G.paint, q.id != "low", layout.id);
             G.nav = new NavGraph(level, G.physics);
             setPalette(G.settings.colorblind ? Config.COLORBLIND_PALETTE : Config.TEAM_PALETTES[(int)(random() * Config.TEAM_PALETTES.Length)]);
             G.projectiles = new Projectiles();
@@ -92,7 +93,7 @@ namespace Inkwave
             G.specials = new SpecialSystem();
             G.rig = new CameraRig();
             buildEnvironment();
-            Debug.Log($"[Inkwave] stage {layout.id}: {level.blocks.Count} blocks, {level.renderTris} tris, atlas {G.paint.size} @ {G.paint.ppm:0.0} ppm, nav {G.nav.validIds.Count}/{G.nav.nodes.Count} nodes");
+            Debug.Log($"[Inkwave] stage {layout.id}: layout {level.layoutHash ?? "-"}, AO {(levelView.lightmap != null ? "on" : "off")}, {level.blocks.Count} blocks, {level.renderTris} tris, atlas {G.paint.size} @ {G.paint.ppm:0.0} ppm, nav {G.nav.validIds.Count}/{G.nav.nodes.Count} nodes");
         }
 
         // (M4 ports environment.js — sky, sea, haze; M1 draws a sun, an ambient fill and a flat sea)

@@ -2,7 +2,7 @@
 //
 // M1 scope: block colour + contact darkening, the full ink layer (B-spline atlas reconstruction close up, meniscus /
 // team-seam height field → normal, fresh/dry gloss, ripples, lip / body colour, halo), lit through URP's PBR with a
-// clear wet coat. The texlib surface patterns, murals, swim wakes, lamps and baked AO arrive with M4/M5.
+// clear wet coat, baked AO. The texlib surface patterns, murals, swim wakes and lamps arrive with M4/M5.
 //
 // The mesh sits under the Z-mirrored world root, so Unity world space is three space mirrored: any cross product of
 // world vectors flips sign — the face bitangent is -cross(N, T) here (three: cross(N, T)).
@@ -14,6 +14,8 @@ Shader "Inkwave/Level"
         _AtlasSize ("Atlas size", Float) = 4096
         _InkGlow ("Ink glow", Float) = 0.06
         _BaseRough ("Base roughness", Float) = 0.82
+        _Light ("Baked AO", 2D) = "white" {}
+        _AO ("AO amount", Float) = 0
     }
     SubShader
     {
@@ -42,10 +44,12 @@ Shader "Inkwave/Level"
             #define INK_RIPPLE_N 24
 
             TEXTURE2D(_Paint); SAMPLER(sampler_Paint);
+            TEXTURE2D(_Light); SAMPLER(sampler_Light);   // baked AO (World/Lightmaps.cs): r = occlusion, through the face's light rect
             CBUFFER_START(UnityPerMaterial)
                 float _AtlasSize;
                 float _InkGlow;
                 float _BaseRough;
+                float _AO;
             CBUFFER_END
             float4 _TeamA, _TeamB;      // linear team colours (global per match)
             float _InkClock;
@@ -316,6 +320,16 @@ Shader "Inkwave/Level"
                 surf.emission = gInkCol * gInk * _InkGlow * (0.75 + 0.35 * gInkS);
                 surf.clearCoatMask = gInk;
                 surf.clearCoatSmoothness = 1.0 - sqrt(cr);
+                // baked ambient occlusion: full on sky / indirect light, a touch (0.4) on the sun's diffuse so contact shadows
+                // read in daylight. URP's occlusion only reaches indirect light, so the direct share rides on the albedo and is
+                // divided back out of the occlusion (indirect diffuse = albedo × bao, direct diffuse = albedo × mix(1, bao, 0.4))
+                if (_AO > 0.0 && i.uv0.z >= 0.0)
+                {
+                    float bao = lerp(1.0, SAMPLE_TEXTURE2D(_Light, sampler_Light, i.uv0.zw).r, _AO);
+                    float m = lerp(1.0, bao, 0.4);
+                    surf.albedo *= m;
+                    surf.occlusion = bao / max(m, 1e-3);
+                }
                 half4 col = UniversalFragmentPBR(inputData, surf);
                 col.rgb = min(col.rgb, 5.0);
                 col.rgb = MixFog(col.rgb, i.fogCoord);
@@ -340,6 +354,7 @@ Shader "Inkwave/Level"
                 float _AtlasSize;
                 float _InkGlow;
                 float _BaseRough;
+                float _AO;
             CBUFFER_END
             float3 _LightDirection;
             float3 _LightPosition;
@@ -379,6 +394,7 @@ Shader "Inkwave/Level"
                 float _AtlasSize;
                 float _InkGlow;
                 float _BaseRough;
+                float _AO;
             CBUFFER_END
             float4 vert(float4 p : POSITION) : SV_POSITION { return TransformObjectToHClip(p.xyz); }
             half4 frag() : SV_Target { return 0; }

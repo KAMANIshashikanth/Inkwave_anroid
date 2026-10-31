@@ -12,6 +12,7 @@ namespace Inkwave.World
         public int id;
         public Vector3 center, half;
         public Vector3[] axes = { new Vector3(1, 0, 0), new Vector3(0, 1, 0), new Vector3(0, 0, 1) };
+        public double[] axX;   // turned boxes: the axes' x components in double — at 45° they tie in float, and JS breaks the tie on the last bit
         public Vector3 aabbMin, aabbMax;
         public bool paint, solid, grate, roof, perch, noNav, rail, hidden, aligned = true, render;
         public Color color;
@@ -55,7 +56,7 @@ namespace Inkwave.World
         uint _stamp = 1;
 
         // extra: collision-only boxes from set dressing — solid, un-inkable, never rendered (the prop mesh is)
-        public class ExtraCollider { public Vector3 min, max, center, size; public float rotY; public bool obox, roof, rail, perch; }
+        public class ExtraCollider { public Vector3 min, max, center, size; public double rotY; public bool obox, roof, rail, perch; }
 
         public Level(LayoutDef layout, List<ExtraCollider> extra = null)
         {
@@ -118,7 +119,9 @@ namespace Inkwave.World
             else if (d.kind == "obox")
             {
                 // box turned about the vertical axis by rotY degrees (a stage laid out at an angle, turned props)
-                float a = d.rotY * Mathf.PI / 180, c = Mathf.Cos(a), s = Mathf.Sin(a);
+                double ad = d.rotY * System.Math.PI / 180, cd = System.Math.Cos(ad), sd = System.Math.Sin(ad);
+                float c = (float)cd, s = (float)sd;
+                b.axX = new[] { cd, 0.0, sd };
                 b.center = d.center;
                 b.half = d.size / 2;
                 b.axes = new[] { new Vector3(c, 0, -s), new Vector3(0, 1, 0), new Vector3(s, 0, c) };
@@ -256,7 +259,7 @@ namespace Inkwave.World
                     }
                     else
                     {
-                        ui = Mathf.Abs(ax[o0].x) >= Mathf.Abs(ax[o1].x) ? o0 : o1;
+                        ui = (b.axX != null ? System.Math.Abs(b.axX[o0]) >= System.Math.Abs(b.axX[o1]) : Mathf.Abs(ax[o0].x) >= Mathf.Abs(ax[o1].x)) ? o0 : o1;
                         vi = o0 == ui ? o1 : o0;
                     }
                     Vector3 v = ax[vi];
@@ -298,7 +301,9 @@ namespace Inkwave.World
                     float uu = Mathf.Min(f.su - 0.05f, Mathf.Max(0.05f, ((float)i / nu) * f.su));
                     float vv = Mathf.Min(f.sv - 0.05f, Mathf.Max(0.05f, ((float)j / nv) * f.sv));
                     Vector3 p = f.origin + f.u * uu + f.v * vv + f.n * 0.03f;
-                    if (!pointInside(p, 0, f.block)) return false;
+                    // (0.1 mm slack: a sample exactly on a neighbour's face counts as inside, as it does in JS's doubles —
+                    // in float it lands a bit either side, and the face list / lightmap layout hash would drift)
+                    if (!pointInside(p, 1e-4f, f.block)) return false;
                 }
             return true;
         }
@@ -326,7 +331,7 @@ namespace Inkwave.World
                 foreach (var f in faces)
                     foreach (float val in new[] { f.origin.x, f.origin.y, f.origin.z, f.su, f.sv })
                     {
-                        hsh ^= (uint)(int)Math.Round(val * 100, MidpointRounding.AwayFromZero);
+                        hsh ^= (uint)(int)Math.Floor((double)val * 100.0 + 0.5);   // JS Math.round: halves go toward +∞ (-12.5 → -12)
                         hsh *= 16777619;
                     }
             }

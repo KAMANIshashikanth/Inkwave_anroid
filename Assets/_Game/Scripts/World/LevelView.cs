@@ -11,13 +11,18 @@ namespace Inkwave.World
         public readonly Material mat;
         readonly Vector4[] ripU = new Vector4[PaintSystem.RIP_N];
 
-        public LevelView(Level level, PaintSystem paint, bool ripples = true)
+        public readonly Texture2D lightmap;
+
+        public LevelView(Level level, PaintSystem paint, bool ripples = true, string layoutId = null)
         {
+            // baked AO first: it lays out the faces' light rects that buildGeometry writes into the mesh
+            lightmap = layoutId != null ? Lightmaps.load(layoutId, level) : null;
             var mesh = level.buildGeometry(paint.size);
             mesh.RecalculateBounds();
             mat = new Material(Shader.Find("Inkwave/Level"));
             mat.SetTexture("_Paint", paint.texture);
             mat.SetFloat("_AtlasSize", paint.size);
+            if (lightmap != null) { mat.SetTexture("_Light", lightmap); mat.SetFloat("_AO", 1); }
             if (ripples) mat.EnableKeyword("INK_RIPPLES");
             go = ThreeSpace.create("level");
             go.AddComponent<MeshFilter>().sharedMesh = mesh;

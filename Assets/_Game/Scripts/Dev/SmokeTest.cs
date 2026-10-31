@@ -23,6 +23,9 @@ namespace Inkwave.Dev
         static void Arm()
         {
             if (!HasArg("-smoketest")) return;
+            // keep running when the window loses focus (the player settings pause it — fine for play, but an unattended run
+            // must not freeze because someone clicked another window)
+            Application.runInBackground = true;
             GameMain.autopilot = true;
             GameMain.matchSeconds = float.TryParse(Arg("-smoketest-seconds"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var s) ? s : 60;
             GameMain.startWeapon = Arg("-smoketest-weapon");

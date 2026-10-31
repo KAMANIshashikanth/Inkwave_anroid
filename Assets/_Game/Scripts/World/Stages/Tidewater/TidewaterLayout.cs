@@ -68,14 +68,15 @@ namespace Inkwave.World.Stages
             for (int i = 0; i < n; i++)
             {
                 if (skip != null && skip(i)) continue;
-                float a = (a0 + da * (i + 0.5f)) * D2R;
-                outL.Add(O(c.x + rm * Mathf.Cos(a), c.y + rm * Mathf.Sin(a), t, len, y0[i % y0.Length], y1, -a / D2R, o));
+                double a = (a0 + da * (i + 0.5)) * D2Rd;
+                outL.Add(O((float)(c.x + rm * System.Math.Cos(a)), (float)(c.y + rm * System.Math.Sin(a)), t, len, y0[i % y0.Length], y1, -a / D2Rd, o));
             }
             if (fill != null)
                 for (int i = ends != 0 ? 0 : 1; i <= (ends == 2 ? n - 1 : ends != 0 ? n : n - 1); i++)
                 {
-                    float a = (a0 + da * i) * D2R, r0 = rIn / Mathf.Cos(h), rmf = (r0 + rOut) / 2, gap = 2 * (rOut - rIn) * Mathf.Tan(h) + 0.14f;
-                    outL.Add(O(c.x + rmf * Mathf.Cos(a), c.y + rmf * Mathf.Sin(a), rOut - r0, gap, fill.y0, fill.y1, -a / D2R, fill.o));
+                    double a = (a0 + da * i) * D2Rd;
+                    float r0 = rIn / Mathf.Cos(h), rmf = (r0 + rOut) / 2, gap = 2 * (rOut - rIn) * Mathf.Tan(h) + 0.14f;
+                    outL.Add(O((float)(c.x + rmf * System.Math.Cos(a)), (float)(c.y + rmf * System.Math.Sin(a)), rOut - r0, gap, fill.y0, fill.y1, -a / D2Rd, fill.o));
                 }
             return outL;
         }
@@ -88,8 +89,8 @@ namespace Inkwave.World.Stages
             float da = (a1 - a0) / n, t = rOut - rIn, rm = (rIn + rOut) / 2, h = Mathf.Abs(da) * D2R / 2, len = 2 * rOut * Mathf.Tan(h);
             for (int i = 0; i < n; i++)
             {
-                float a = (a0 + da * (i + 0.5f)) * D2R;
-                outL.Add(O(c.x + rm * Mathf.Cos(a), c.y + rm * Mathf.Sin(a), t, len, y0, tops[i % 2], -a / D2R, o));
+                double a = (a0 + da * (i + 0.5)) * D2Rd;
+                outL.Add(O((float)(c.x + rm * System.Math.Cos(a)), (float)(c.y + rm * System.Math.Sin(a)), t, len, y0, tops[i % 2], -a / D2Rd, o));
             }
             return outL;
         }
