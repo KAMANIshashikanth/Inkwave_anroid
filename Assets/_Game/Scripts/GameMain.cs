@@ -31,6 +31,8 @@ namespace Inkwave
         public static bool randomRoster;    // -smoketest-roster random: every bot gets a random weapon / sub / special
         public static int rosterSeed;       // the roster's RNG seed (logged in summary.txt so a run can be replayed)
         public static string startSpecial;  // the local player's special (-smoketest-special; default: the weapon's own)
+        public static string stageTime = "day";   // 'day' | 'dusk' (MAPS[].times → the environment theme; -smoketest-time)
+        public GameObject stageDressing;
 
         void Awake()
         {
@@ -66,6 +68,10 @@ namespace Inkwave
                 urp.renderScale = touchMode ? Mathf.Clamp(q.pixelRatio / Mathf.Max(1, dpr), 0.5f, 1f) : 1f;
                 urp.msaaSampleCount = q.msaa >= 4 ? 4 : q.msaa >= 2 ? 2 : 1;
                 urp.shadowDistance = 60;
+                // environment.js _fitShadow: ONE sun shadow map over the arena at the tier's size (not URP's 4 cascades,
+                // which redraw the whole-stage dressing meshes four times)
+                urp.shadowCascadeCount = 1;
+                urp.mainLightShadowmapResolution = q.shadowSize;
             }
         }
 
@@ -93,15 +99,24 @@ namespace Inkwave
             G.subs = new SubSystem();
             G.specials = new SpecialSystem();
             G.rig = new CameraRig();
-            buildEnvironment();
+            buildEnvironment(layout.id);
             Debug.Log($"[Inkwave] stage {layout.id}: layout {level.layoutHash ?? "-"}, AO {(levelView.lightmap != null ? "on" : "off")}, texlib {(texlib ? Texlib.size.ToString() : "off")}, {level.blocks.Count} blocks, {level.renderTris} tris, atlas {G.paint.size} @ {G.paint.ppm:0.0} ppm, nav {G.nav.validIds.Count}/{G.nav.nodes.Count} nodes");
         }
 
-        // (M4 ports environment.js — sky, sea, haze; M1 draws a sun, an ambient fill and a flat sea)
-        void buildEnvironment()
+        // The stage dressing + environment baked from the web build (StageLoader / StageEnvironment); without a bake, M1's
+        // stand-in: a sun, an ambient fill and a flat sea
+        void buildEnvironment(string stageId)
         {
             if (sun == null) sun = FindAnyObjectByType<Light>();
             if (sun == null) sun = new GameObject("Sun").AddComponent<Light>();
+            var sj = StageLoader.describe(stageId, stageTime);
+            if (sj != null)
+            {
+                stageDressing = StageLoader.load(sj);
+                StageEnvironment.apply(sj, sun, cam, G.settings.shadows, G.quality.bloom);
+                return;
+            }
+            Debug.LogWarning($"[inkwave] no stage bake for {stageId}/{stageTime} — stand-in environment");
             sun.type = LightType.Directional;
             sun.intensity = 1.3f;
             sun.shadows = G.settings.shadows ? LightShadows.Soft : LightShadows.None;
@@ -262,6 +277,7 @@ namespace Inkwave
             G.paint?.dispose();
             G.subs?.dispose();
             touch?.dispose();
+            StageEnvironment.dispose();
         }
     }
 }

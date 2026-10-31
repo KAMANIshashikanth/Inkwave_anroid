@@ -62,7 +62,7 @@ A bot plays the local player through a whole match. The run writes screenshots a
 | M1 | Playable core on Tidewater Plaza: level, physics, player, camera, ink, squid, Spritzer + bomb, bots, Turf War, HUD | done; phone test passed ("no lag") |
 | M2 | Procedural squidkid (rig + animation) | done for now: model, rig, full animation, weapon models; phone test passed. Faithful material port (cloth graphics, lid/mouth rig, parallax iris) deferred to polish |
 | M3 | All 12 weapons, 15 subs, 19 specials | done: all 12 mains, 15 subs and 19 specials (smoke PASS each); phone gate passed (19/19 specials on the device) |
-| M4 | All 7 stages, props, environment, textures | in progress: browser baker, texture library (46 layers, Texture2DArrays) sampled by the level shader (slot table, anti-tiling, stairs, pattern overlays, modelled detail, gel), baked AO with exact layout parity, prop colliders. Next: Tidewater props / murals / environment / post (Task 7) |
+| M4 | All 7 stages, props, environment, textures | in progress: browser baker, texture library sampled by the level shader, baked AO with exact layout parity, prop colliders; Tidewater dressing exported from the web build (props, decor, scenery, sky + clouds, sea stand-in) with its sun / sky-fill / image light / fog, day and dusk. Next: sea + sky + scenery shaders, animation, murals, the grade pass (Task 7 part 2) |
 | M5 | FX + procedural audio | — |
 | M6 | Menus, HUD, map, locker | — |
 | M7 | Zone Control, Boss mode | — |

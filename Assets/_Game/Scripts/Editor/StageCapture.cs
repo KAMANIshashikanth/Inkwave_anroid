@@ -40,6 +40,9 @@ namespace Inkwave.EditorTools
             // as the game on the desktop high tier: baked AO + the 512 texture library (-captureTexlib off = fallback)
             bool texlib = ArgValue("-captureTexlib") != "off" && Texlib.bind(Config.QUALITY["high"], false);
             var view = new LevelView(level, paint, true, layout.id, texlib);
+            // the baked dressing + environment (-captureTime dusk; -captureDressing off = the bare level)
+            var sj = ArgValue("-captureDressing") == "off" ? null : StageLoader.describe(layout.id, ArgValue("-captureTime") ?? "day");
+            if (sj != null) { StageLoader.load(sj); StageEnvironment.apply(sj, sun, cam, true, true); }
             Debug.Log($"[Inkwave] capture: layout {level.layoutHash}, AO {(view.lightmap != null ? "on" : "off")}, texlib {(texlib ? Texlib.size.ToString() : "off")}");
             LevelView.setTeamColors(Ctx.hex("#ff8a14"), Ctx.hex("#2f5bff"));
             Debug.Log($"[Inkwave] Tidewater: {level.blocks.Count} blocks, {level.faces.Count} faces, {paint.paintFaces.Count} paintable, " +
@@ -66,6 +69,7 @@ namespace Inkwave.EditorTools
             var L = level.layout;
             ThreeSpace.cameraLookAt(cam, L.artFrom, L.artLook, Vector3.up);
             cam.fieldOfView = L.artFov * 0.8f;
+            GreyBoxTools.Capture(cam, System.IO.Path.Combine(dir, "tidewater_art.png"));   // (warm-up: the first render of a batch session misses lighting)
             GreyBoxTools.Capture(cam, System.IO.Path.Combine(dir, "tidewater_art.png"));
             cam.fieldOfView = 60;
             ThreeSpace.cameraLookAt(cam, L.intro.from, L.intro.lookFrom, Vector3.up);
@@ -77,6 +81,7 @@ namespace Inkwave.EditorTools
             // surface close-ups: the terrace steps (stair frame) and the square's paving
             ThreeSpace.cameraLookAt(cam, new Vector3(-3, 2.0f, -16.5f), new Vector3(0, 0.6f, -10), Vector3.up);
             GreyBoxTools.Capture(cam, System.IO.Path.Combine(dir, "tidewater_steps.png"));
+            cam.fieldOfView = 52.1f;   // the web game camera at this pose (Builds/Captures/t6b/web_paving.png)
             ThreeSpace.cameraLookAt(cam, new Vector3(-12, 1.8f, -20), new Vector3(-6, 0, -15), Vector3.up);
             GreyBoxTools.Capture(cam, System.IO.Path.Combine(dir, "tidewater_paving.png"));
             paint.dispose();

@@ -31,6 +31,7 @@ namespace Inkwave.Dev
             GameMain.startWeapon = Arg("-smoketest-weapon");
             GameMain.startSub = Arg("-smoketest-sub");
             GameMain.startSpecial = Arg("-smoketest-special");
+            if (Arg("-smoketest-time") == "dusk") GameMain.stageTime = "dusk";
             if (Arg("-smoketest-roster") == "random")
             {
                 GameMain.randomRoster = true;

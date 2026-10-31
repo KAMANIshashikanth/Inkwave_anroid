@@ -1,6 +1,6 @@
 # Smoke runner: one Windows player run per sub; the verdict is the last PASS/FAIL line of summary.txt.
 param([string]$Weapon = 'shooter', [string[]]$Subs = @(''), [string]$Special = '', [string]$Map = '', [string]$Mode = '',
-      [string]$Roster = '', [string]$Tag = 'run', [int]$Seconds = 90)
+      [string]$Roster = '', [string]$Time = '', [string]$Tag = 'run', [int]$Seconds = 90)
 $proj = 'D:\color_splash\Inkwave_anroid'
 $exe = "$proj\Builds\Windows\ColorSplash.exe"
 foreach ($s in $Subs) {
@@ -15,6 +15,7 @@ foreach ($s in $Subs) {
   if ($Map) { $a += @('-smoketest-map', $Map) }
   if ($Mode) { $a += @('-smoketest-mode', $Mode) }
   if ($Roster) { $a += @('-smoketest-roster', $Roster) }
+  if ($Time) { $a += @('-smoketest-time', $Time) }
   $p = Start-Process -FilePath $exe -ArgumentList $a -PassThru
   if (-not $p.WaitForExit(240000)) { $p.Kill(); "$name TIMEOUT"; continue }
   $sum = "$out\summary.txt"
