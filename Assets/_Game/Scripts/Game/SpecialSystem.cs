@@ -1,8 +1,9 @@
+using System;
 using UnityEngine;
 namespace Inkwave
 {
     // Minimal placeholder so that G.specials can be referenced without CS0246.
-    // The full implementation (barrage, bubbler, sonar, etc.) will be added in Task 3.
+    // The full implementation (barrage, bubbler, sonar, etc.) will be added in Task 3‑4.
     public class SpecialSystem
     {
         // Stub methods used by the current Task 3 edits.
