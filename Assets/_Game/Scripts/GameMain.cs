@@ -144,8 +144,17 @@ namespace Inkwave
         }
 
         // ------------------------------------------------------------------ match
+        int matchN;
+
         public void startMatch()
         {
+            // TEMPORARY (until the menus, Task 14): every new match alternates day and dusk so both are playable
+            if (matchN++ > 0 && !autopilot && StageLoader.describe(G.level.layout.id, stageTime == "day" ? "dusk" : "day") != null)
+            {
+                stageTime = stageTime == "day" ? "dusk" : "day";
+                if (stageDressing != null) Destroy(stageDressing);
+                buildEnvironment(G.level.layout.id);
+            }
             G.match?.dispose();
             G.paint.clear();
             G.projectiles.clear();
