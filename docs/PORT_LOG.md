@@ -75,4 +75,4 @@
 - Captures: `t5-crab/special_1b_crab.png` (the rig with the kid in its hatch), `t5-kraken/special_1b_kraken.png` (the kraken + ink trail), others in `Builds/Smoke/t5-<id>/`.
 - Phone: M3 phone gate NOT DONE yet — needs an APK build and the user's touch test (Review Focus 1: trigger every special from the touch button; aim strike / zooka by touch).
 - Known gaps / deviations from the JS: Return marker badge is a team-coloured ball that greys out (no special icon / clock-sweep until the icon sprites, Task 12); no human cheer button yet (bots cheer; the HUD button comes with Task 13); minimap layers / HUD prompts not drawn (Task 13). One unexplained stall in the first t5 batch (17:53-17:59: jetpack froze 3 min right after the match start, booyah ~40 s mid-match, zipcaster froze in its first second and hit the 240 s TIMEOUT) — every one of these happened before / outside the specials' own code, and none reproduced in the re-runs (`t5-zipcaster`, `t5-jetpack`, `t5-booyah` PASS with normal timing) or in the 17-run regression; watch for it on the phone.
-- Commit: pending
+- Commit: 2273b8a
