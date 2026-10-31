@@ -64,4 +64,4 @@
 - Captures: `t4-zooka/special_1b_zooka.png` (the zooka held), `t4-blower/special_1b_blower.png` (a blown bubble), `t4-wail/special_1b_wail.png` (placed Howl Box + firing beam), `t4-strike/special_1c_strike_vortex.png` (the vortex swirling behind the central tower).
 - Phone: not required for this task (M3 phone gate is Task 5)
 - Known gaps / deviations from the JS: the human player's Vortex Strike cursor is a ground ring slid by the move stick (fire launches) instead of a cursor on the opened stage map — the map comes with the full HUD (Task 13), which should switch it back to `aimMove` in map pixels. The minimap layer (missiles, tornados, speakers, bubbles) and the HUD prompts are not drawn yet (Task 13). Online ghosts / net ids omitted (offline). Prop fallbacks (when props are not baked) are simple spheres instead of three's box / capsule.
-- Commit: pending
+- Commit: 1c45286
