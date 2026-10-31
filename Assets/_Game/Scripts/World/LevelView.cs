@@ -13,7 +13,8 @@ namespace Inkwave.World
 
         public readonly Texture2D lightmap;
 
-        public LevelView(Level level, PaintSystem paint, bool ripples = true, string layoutId = null)
+        /** texlib: the texture library is bound (Texlib.bind) — surface patterns on, else the procedural fallback */
+        public LevelView(Level level, PaintSystem paint, bool ripples = true, string layoutId = null, bool texlib = false)
         {
             // baked AO first: it lays out the faces' light rects that buildGeometry writes into the mesh
             lightmap = layoutId != null ? Lightmaps.load(layoutId, level) : null;
@@ -24,6 +25,7 @@ namespace Inkwave.World
             mat.SetFloat("_AtlasSize", paint.size);
             if (lightmap != null) { mat.SetTexture("_Light", lightmap); mat.SetFloat("_AO", 1); }
             if (ripples) mat.EnableKeyword("INK_RIPPLES");
+            if (texlib) mat.EnableKeyword("USE_TEXLIB");
             go = ThreeSpace.create("level");
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             var mr = go.AddComponent<MeshRenderer>();

@@ -85,7 +85,8 @@ namespace Inkwave
             G.physics = new Physics(level);
             var q = G.quality;
             G.paint = new PaintSystem(level, Mathf.Max(512, q.paintAtlas), q.paintAtlas >= 4096 ? 30 : 18);
-            levelView = new LevelView(level, G.paint, q.id != "low", layout.id);
+            bool texlib = Texlib.bind(q, G.input.touch.active);
+            levelView = new LevelView(level, G.paint, q.id != "low", layout.id, texlib);
             G.nav = new NavGraph(level, G.physics);
             setPalette(G.settings.colorblind ? Config.COLORBLIND_PALETTE : Config.TEAM_PALETTES[(int)(random() * Config.TEAM_PALETTES.Length)]);
             G.projectiles = new Projectiles();
@@ -93,7 +94,7 @@ namespace Inkwave
             G.specials = new SpecialSystem();
             G.rig = new CameraRig();
             buildEnvironment();
-            Debug.Log($"[Inkwave] stage {layout.id}: layout {level.layoutHash ?? "-"}, AO {(levelView.lightmap != null ? "on" : "off")}, {level.blocks.Count} blocks, {level.renderTris} tris, atlas {G.paint.size} @ {G.paint.ppm:0.0} ppm, nav {G.nav.validIds.Count}/{G.nav.nodes.Count} nodes");
+            Debug.Log($"[Inkwave] stage {layout.id}: layout {level.layoutHash ?? "-"}, AO {(levelView.lightmap != null ? "on" : "off")}, texlib {(texlib ? Texlib.size.ToString() : "off")}, {level.blocks.Count} blocks, {level.renderTris} tris, atlas {G.paint.size} @ {G.paint.ppm:0.0} ppm, nav {G.nav.validIds.Count}/{G.nav.nodes.Count} nodes");
         }
 
         // (M4 ports environment.js — sky, sea, haze; M1 draws a sun, an ambient fill and a flat sea)

@@ -3,7 +3,7 @@
 //
 //   node Tools/bake/browser.mjs <page> [query]          runs Tools/bake/pages/<page>.html?<query> until the page sets
 //                                                       window.__bakeDone (window.__bakeError → exit 1)
-//   node Tools/bake/browser.mjs --url <served path> --shot <png> [--wait <s>] [--size 1280x720]
+//   node Tools/bake/browser.mjs --url <served path> --shot <png> [--wait <s>] [--size 1280x720] [--eval <js> [--settle <s>]]
 //                                                       a reference screenshot of any served page
 //
 // A static server on 127.0.0.1 is rooted at the project folder (/reference/inkwave/…, /Tools/bake/pages/…). Pages save
@@ -131,7 +131,17 @@ if (shotMode) {
   const shot = path.resolve(opt('--shot'));
   await send('Page.navigate', { url });
   await sleep(+opt('--wait', 5) * 1000);
-  const { data } = await send('Page.captureScreenshot', { format: 'png' });
+  // --eval <js>: run in the page after the wait (e.g. pose the game camera through window.__inkwave), then settle. If it
+  // resolves to a PNG data URL (e.g. the WebGL canvas read right after a render), that image is the shot.
+  let data = null;
+  if (opt('--eval')) {
+    const { result, exceptionDetails } = await send('Runtime.evaluate', { expression: opt('--eval'), returnByValue: true, awaitPromise: true });
+    if (exceptionDetails) console.error('[eval]', exceptionDetails.exception?.description || exceptionDetails.text);
+    else if (typeof result?.value === 'string' && result.value.startsWith('data:image/png;base64,')) data = result.value.slice(22);
+    else if (result && result.value !== undefined) console.log('[eval]', result.value);
+    if (!data) await sleep(+opt('--settle', 1.5) * 1000);
+  }
+  if (!data) ({ data } = await send('Page.captureScreenshot', { format: 'png' }));
   fs.mkdirSync(path.dirname(shot), { recursive: true });
   fs.writeFileSync(shot, Buffer.from(data, 'base64'));
   console.log('shot', path.relative(ROOT, shot));

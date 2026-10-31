@@ -32,11 +32,15 @@ namespace Inkwave.EditorTools
             RenderSettings.ambientGroundColor = new Color(0.4f, 0.38f, 0.35f);
 
             var t0 = System.Diagnostics.Stopwatch.StartNew();
-            var level = new Level(Inkwave.World.Stages.Tidewater.build());
+            var layout = Inkwave.World.Stages.Tidewater.build();
+            var level = new Level(layout, StageColliders.load(layout.id));
             long tLevel = t0.ElapsedMilliseconds;
             var paint = new PaintSystem(level, 2048);
             long tPaint = t0.ElapsedMilliseconds;
-            var view = new LevelView(level, paint);
+            // as the game on the desktop high tier: baked AO + the 512 texture library (-captureTexlib off = fallback)
+            bool texlib = ArgValue("-captureTexlib") != "off" && Texlib.bind(Config.QUALITY["high"], false);
+            var view = new LevelView(level, paint, true, layout.id, texlib);
+            Debug.Log($"[Inkwave] capture: layout {level.layoutHash}, AO {(view.lightmap != null ? "on" : "off")}, texlib {(texlib ? Texlib.size.ToString() : "off")}");
             LevelView.setTeamColors(Ctx.hex("#ff8a14"), Ctx.hex("#2f5bff"));
             Debug.Log($"[Inkwave] Tidewater: {level.blocks.Count} blocks, {level.faces.Count} faces, {paint.paintFaces.Count} paintable, " +
                       $"{level.renderTris} tris, ppm {paint.ppm:0.0}, turf cells {paint.turfTotal} ({paint.turfArea:0} m²); level {tLevel} ms, paint {tPaint - tLevel} ms");
@@ -70,6 +74,11 @@ namespace Inkwave.EditorTools
             GreyBoxTools.Capture(cam, System.IO.Path.Combine(dir, "tidewater_spawn.png"));
             ThreeSpace.cameraLookAt(cam, new Vector3(3, 1.6f, -9), new Vector3(0, 0.2f, -3), Vector3.up);
             GreyBoxTools.Capture(cam, System.IO.Path.Combine(dir, "tidewater_ink_close.png"));
+            // surface close-ups: the terrace steps (stair frame) and the square's paving
+            ThreeSpace.cameraLookAt(cam, new Vector3(-3, 2.0f, -16.5f), new Vector3(0, 0.6f, -10), Vector3.up);
+            GreyBoxTools.Capture(cam, System.IO.Path.Combine(dir, "tidewater_steps.png"));
+            ThreeSpace.cameraLookAt(cam, new Vector3(-12, 1.8f, -20), new Vector3(-6, 0, -15), Vector3.up);
+            GreyBoxTools.Capture(cam, System.IO.Path.Combine(dir, "tidewater_paving.png"));
             paint.dispose();
         }
 
