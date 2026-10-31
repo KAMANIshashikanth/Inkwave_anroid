@@ -136,7 +136,7 @@ namespace Inkwave
             d = new SubDef
             {
                 kind = r.kind, handL = fr(r.handL), inHandL = fr(r.inHandL), spinAt = v3(r.spinAt),
-                body = CharacterGeo.loadRigid(DIR, p + "body"), ink = CharacterGeo.loadRigid(DIR, p + "ink"),
+                body = CharacterGeo.loadRigid(DIR, p + "body", r.kind == "boomerang"), ink = CharacterGeo.loadRigid(DIR, p + "ink"),
                 spin = r.spin ? CharacterGeo.loadRigid(DIR, p + "spin") : null, spinInk = r.spinInk ? CharacterGeo.loadRigid(DIR, p + "spinInk") : null,
                 glow = r.glow ? CharacterGeo.loadRigid(DIR, p + "glow") : null,
             };

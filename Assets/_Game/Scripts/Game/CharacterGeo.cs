@@ -191,14 +191,15 @@ namespace Inkwave
 
         static Mesh loadMesh(string path, Dictionary<string, Vector3> rest) => buildMesh(path, readIWK(path), rest);
 
-        /** A rigid (unskinned) baked mesh from any Resources folder (weapons: "KidWeapons/"); null when not baked. */
-        public static Mesh loadRigid(string folder, string path)
+        /** A rigid (unskinned) baked mesh from any Resources folder (weapons: "KidWeapons/"); null when not baked.
+         *  readable: keep the CPU copy when a caller reads .vertices (the boomerang's spin-blur disc measures it). */
+        public static Mesh loadRigid(string folder, string path, bool readable = false)
         {
             if (Resources.Load<TextAsset>(folder + path) == null) return null;
-            return buildMesh(path, readIWK(path, folder), null);
+            return buildMesh(path, readIWK(path, folder), null, readable);
         }
 
-        static Mesh buildMesh(string name, Raw r, Dictionary<string, Vector3> rest)
+        static Mesh buildMesh(string name, Raw r, Dictionary<string, Vector3> rest, bool readable = false)
         {
             var m = new Mesh { name = "kid:" + name };
             m.SetVertexBufferParams(r.vc, r.layout);
@@ -237,7 +238,7 @@ namespace Inkwave
                 m.bounds = new Bounds(new Vector3(0, 0.75f, 0), Vector3.one * 2.6f);   // Builder's bounding sphere (0, 0.75, 0) r 1.3
             }
             else m.RecalculateBounds();
-            m.UploadMeshData(true);
+            m.UploadMeshData(!readable);
             return m;
         }
     }

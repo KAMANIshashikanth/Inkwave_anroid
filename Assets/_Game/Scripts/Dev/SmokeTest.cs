@@ -27,6 +27,13 @@ namespace Inkwave.Dev
             GameMain.matchSeconds = float.TryParse(Arg("-smoketest-seconds"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var s) ? s : 60;
             GameMain.startWeapon = Arg("-smoketest-weapon");
             GameMain.startSub = Arg("-smoketest-sub");
+            if (Arg("-smoketest-roster") == "random")
+            {
+                GameMain.randomRoster = true;
+                var seedArg = Arg("-smoketest-seed");
+                GameMain.rosterSeed = seedArg != null && int.TryParse(seedArg, out var sd) ? sd
+                    : unchecked((int)(System.DateTime.UtcNow.Ticks & 0x7fffffff)) | 1;
+            }
             var go = new GameObject("SmokeTest");
             DontDestroyOnLoad(go);
             go.AddComponent<SmokeTest>();
@@ -46,6 +53,7 @@ namespace Inkwave.Dev
             Directory.CreateDirectory(outDir);
             float ts = float.TryParse(Arg("-smoketest-timescale"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var x) ? x : 1;
             Log($"start: screen {Screen.width}x{Screen.height}, timescale {ts}, match {GameMain.matchSeconds}s");
+            if (GameMain.randomRoster) Log($"roster: random seed {GameMain.rosterSeed}");
             yield return new WaitForSecondsRealtime(1.0f);
             Time.timeScale = ts;
             yield return Shot("01_intro");
@@ -84,7 +92,7 @@ namespace Inkwave.Dev
             yield return Shot($"{k:00}_results");
             var cov = m.result.coverage;
             Log($"result: alpha {cov.x * 100:0.0}% bravo {cov.y * 100:0.0}% winner {(m.result.winner == 0 ? "alpha" : "bravo")}");
-            foreach (var a in m.actors) Log($"  {a.name,-10} team {a.team} {a.weaponId,-8} {a.subId,-9} turf {a.stats.turf,6:0} splats {a.stats.splats} deaths {a.stats.deaths}");
+            foreach (var a in m.actors) Log($"  {a.name,-10} team {a.team} {a.weaponId,-8} {a.subId,-9} {a.specialId,-12} turf {a.stats.turf,6:0} splats {a.stats.splats} deaths {a.stats.deaths}");
             { var B = Brolly.STATS; if (B.blasts > 0) Log($"brolly: blasts {B.blasts} opens {B.opens} blocked {B.blocked} ({B.blockedDmg:0} dmg) launches {B.launches} breaks {B.breaks} guarded {B.guarded}"); }
             foreach (var kv in subN) Log($"subs: {kv.Key} x{kv.Value}");
             { if (BotBrain.THREAT_STATS.noticed > 0) Log($"threats: noticed {BotBrain.THREAT_STATS.noticed} shoot {BotBrain.THREAT_STATS.shoot} evade {BotBrain.THREAT_STATS.evade} swim {BotBrain.THREAT_STATS.swim} sidestep {BotBrain.THREAT_STATS.sidestep} gone {BotBrain.THREAT_STATS.gone}"); }

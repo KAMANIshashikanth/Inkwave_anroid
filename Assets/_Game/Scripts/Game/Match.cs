@@ -75,6 +75,8 @@ namespace Inkwave
             }
             var names = Config.BOT_NAMES.OrderBy(_ => random()).ToList();
             string[] subs = Config.SUB_ORDER.Where(SubSystem.ported).ToArray();   // (of the ported kinds)
+            // -smoketest-roster random: a seeded loadout per bot, covering WEAPON_ORDER × SUB_ORDER × SPECIAL_ORDER
+            Func<float> rosterRng = GameMain.randomRoster ? rng(GameMain.rosterSeed) : null;
             int ni = 0;
             for (int team = 0; team < (practice ? 1 : 2); team++)
             {
@@ -86,7 +88,14 @@ namespace Inkwave
                     var style = isLocal ? new CharacterStyle.Style() : CharacterStyle.randomStyle(() => UnityEngine.Random.value);
                     // subs: yours from the loadout; bots carry a random one (about half keep their weapon's default)
                     string sub = isLocal ? o.sub : random() < 0.5f ? null : subs[(int)(random() * subs.Length)];
-                    var a = new Actor(team, isLocal ? (o.playerName ?? "You") : names[ni++ % names.Count], weapons[s], sub, null, isLocal, !isLocal, s, style);
+                    string weapon = weapons[s], special = null;
+                    if (rosterRng != null && (!isLocal || o.autopilot))
+                    {
+                        weapon = Config.WEAPON_ORDER[(int)(rosterRng() * Config.WEAPON_ORDER.Length)];
+                        sub = Config.SUB_ORDER[(int)(rosterRng() * Config.SUB_ORDER.Length)];
+                        special = Config.SPECIAL_ORDER[(int)(rosterRng() * Config.SPECIAL_ORDER.Length)];
+                    }
+                    var a = new Actor(team, isLocal ? (o.playerName ?? "You") : names[ni++ % names.Count], weapon, sub, special, isLocal, !isLocal, s, style);
                     if (!isLocal || o.autopilot) a.bot = new BotBrain(a, o.difficulty);
                     actors.Add(a);
                 }
