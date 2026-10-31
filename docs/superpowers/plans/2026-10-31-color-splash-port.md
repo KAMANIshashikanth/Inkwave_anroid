@@ -1,5 +1,7 @@
 # Color Splash (INKWAVE → Unity C# Android) — Port Completion Plan
 
+> **Status:** see `docs/TRACKER.md` for what is done (Tasks 0–6, most of 7) and what remains. Evidence per task: `docs/PORT_LOG.md`.
+
 > **For agentic workers:** this is the handoff for finishing the port. Work task by task, in order. Steps use checkbox (`- [ ]`) syntax for tracking. **The user forbids sub-agents**: do every read, search, plan and edit yourself (no Agent / Explore / Plan / Workflow tools or equivalents). After every task, append a record to `docs/PORT_LOG.md` (format in Part C). The user will have Claude verify each task from that record, so a task without a record counts as not done.
 
 **Goal:** finish translating the open-source three.js game INKWAVE (MIT, © Jayden Davis) into the Unity 6 C# project `D:\color_splash\Inkwave_anroid`. The result is "Color Splash": an offline-only Android game against bots, faithful to the web original, that runs well on a phone.

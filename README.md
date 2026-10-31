@@ -56,13 +56,15 @@ Builds/Windows/ColorSplash.exe -smoketest -smoketest-out DIR -smoketest-seconds 
 A bot plays the local player through a whole match. The run writes screenshots and `summary.txt` (splats, coverage, per-player stats, fps, errors). It exits with code 0 on PASS: no errors, and both teams inked turf.
 
 ## Milestones
+Current status, the end-to-end list of finished tasks and everything that remains: [docs/TRACKER.md](docs/TRACKER.md).
+
 | # | Scope | Status |
 |---|---|---|
 | M0 | Setup, config, event bus, input + touch, three-space bridge, grey box | done |
 | M1 | Playable core on Tidewater Plaza: level, physics, player, camera, ink, squid, Spritzer + bomb, bots, Turf War, HUD | done; phone test passed ("no lag") |
 | M2 | Procedural squidkid (rig + animation) | done for now: model, rig, full animation, weapon models; phone test passed. Faithful material port (cloth graphics, lid/mouth rig, parallax iris) deferred to polish |
 | M3 | All 12 weapons, 15 subs, 19 specials | done: all 12 mains, 15 subs and 19 specials (smoke PASS each); phone gate passed (19/19 specials on the device) |
-| M4 | All 7 stages, props, environment, textures | in progress: browser baker, texture library sampled by the level shader, baked AO with exact layout parity, prop colliders; Tidewater dressing exported from the web build (props, decor, scenery, sky + clouds, sea stand-in) with its sun / sky-fill / image light / fog, day and dusk. Next: sea + sky + scenery shaders, animation, murals, the grade pass (Task 7 part 2) |
+| M4 | All 7 stages, props, environment, textures | in progress: Tidewater fully dressed from the web build (props, decor, murals, sea, sky + clouds, scenery haze + night lights, animation, cloth, spawn pads, grade + tone map), day and dusk; left: bloom, lamp pools, ink-coat look, see-through, phone verdict. Other six stages = Task 8 |
 | M5 | FX + procedural audio | — |
 | M6 | Menus, HUD, map, locker | — |
 | M7 | Zone Control, Boss mode | — |
