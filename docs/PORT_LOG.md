@@ -120,3 +120,4 @@
 - Compare at the web pose (`Builds/Captures/t7f/tidewater_paving.png` vs `t6b/web_paving.png`): paving 144/106/102 vs web 141/100/87 (part 1: 148/120/114; Task 6: 209/170/151); planter 136/116/102 vs 116/96/79; sky 196/192/181 vs 184/176/162. Murals: the clock tower's ring and the floral clock (`t7f/tidewater_art.png`, `tidewater_mural.png`).
 - Smoke: `t7f` PASS 55.4 fps, `t7f-dusk` PASS 58.3 fps, errors 0 (Windows).
 - Still stand-ins: sea shader, scenery haze / night window glow, cloth wave, spawn pads, lighthouse beam look, dusk lamp pools.
+- Commit: 7ca1a9b
