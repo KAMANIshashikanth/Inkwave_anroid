@@ -1351,7 +1351,7 @@ namespace Inkwave
             foreach (var e in G.actors)
             {
                 if (e.team == p.team || !e.alive) continue;
-                float h = e.form == "squid" ? PLAYER.squidHeight : PLAYER.height, hr = PLAYER.radius;
+                float h = e.hitH ?? (e.form == "squid" ? PLAYER.squidHeight : PLAYER.height), hr = e.hitR ?? PLAYER.radius;
                 if (Mathf.Abs(e.pos.x - p.pos.x) > 3 + hr || Mathf.Abs(e.pos.z - p.pos.z) > 3 + hr) continue;
                 var (dist, t) = Physics.segmentCapsuleDist(p.prev, p.pos, hitBase(e), hr, h);
                 // generous hitbox: the whole visible body plus the blob's own radius

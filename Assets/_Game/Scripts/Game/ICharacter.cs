@@ -24,6 +24,7 @@ namespace Inkwave
         void setColor(Color c);
         void setWeapon(string id);
         bool hideWeapon { get; set; }
+        bool hideSubProp { get; set; }
         void setSub(string kind);
         void update(float dt, AnimState s);
         void trigger(string name, float arg = 1, Vector2? dir = null);

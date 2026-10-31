@@ -29,7 +29,7 @@ namespace Inkwave
         public static Vector3 camPos;   // three-space camera position (audio / fx distance checks)
     }
 
-    public class Intent { public Vector3 move; public bool jump, squid, fire, sub, special; }
+    public class Intent { public Vector3 move; public bool jump, squid, fire, sub, special, cheer; }   // cheer: one frame (Cheer Orb)
 
     public class Status { public float track, poison, reveal, shield; public int trackTeam = -1, revealTeam = -1; }
 
@@ -43,6 +43,7 @@ namespace Inkwave
         public bool ended, endCued;
         public SubDef bomb; public float nextThrow;   // Bomb Barrage: its bomb, the next throw allowed at (G.time)
         public object data;                           // a kind's own state (Strike.State, Blower.State, …)
+        public ReturnMarker marker;                   // Ink Jet / Zipline: where they super jump back to
         public bool armor, body, inkProof, noSquid, faceMove, aimFace, jumpBack, raise;
         public float? speed, accel, faceYaw;
         public float hang, seat, firing;
@@ -78,6 +79,7 @@ namespace Inkwave
         public readonly AnimState anim = new AnimState();
         public bool remote;   // online proxies (not ported) — always false here
         public BotBrain bot;  // bots (and the local player on autopilot)
+        public float? hitR, hitH;   // a bigger hit capsule while riding (Crab Rig); null = PLAYER.radius / height
 
         // state (reset())
         public bool alive, submerged, climbing, grounded, onEnemy;

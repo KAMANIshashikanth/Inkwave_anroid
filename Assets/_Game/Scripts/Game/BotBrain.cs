@@ -247,7 +247,19 @@ namespace Inkwave
                         plantT -= dt;
                         if (planted && plantT > 0) { mvx = 0; mvz = 0; }
                     }
-                    // (an enemy on a Mega Stamp: step out of its line — with specials.js)
+                    // an enemy on a Mega Stamp: never stand in its path — it charges straight and turns slowly, so step out of
+                    // its line to the side (and back off a touch), then work round to its flank / back where it's open
+                    if (tg.specialActive != null && tg.specialActive.id == "stamp" && tg.specialActive.data is Stamp.State tss)
+                    {
+                        float fy = tss.bodyYaw, fx = Mathf.Sin(fy), fz = Mathf.Cos(fy);
+                        float rx = a.pos.x - tg.pos.x, rz = a.pos.z - tg.pos.z, rl = Mathf.Sqrt(rx * rx + rz * rz); if (rl == 0) rl = 1;
+                        if ((rx * fx + rz * fz) / rl > Mathf.Cos(1.25f) && dist < 10)
+                        {
+                            float side = (rx * fz - rz * fx) >= 0 ? 1 : -1;   // which side of its facing line we're already on
+                            mvx = fz * side + (rx / rl) * 0.45f; mvz = -fx * side + (rz / rl) * 0.45f;
+                        }
+                        else if (dist < 4.5f && !MELEE.Contains(w.kind)) { mvx += (rx / rl) * 0.4f; mvz += (rz / rl) * 0.4f; }
+                    }
                     float l = Mathf.Sqrt(mvx * mvx + mvz * mvz);
                     move = l > 0.01f ? new Vector3(mvx / l, 0, mvz / l) : Vector3.zero;
                     // fire only when the *actual* aim is on the body (shots follow the visible aim, not the target)
@@ -640,12 +652,30 @@ namespace Inkwave
 
         // driving a running special: most reuse the normal fight aim; these set the trigger / sub / movement they need
         // (the kinds still to port add their cases, the Cheer Orb cheering and the Mega Stamp guard with them)
-        float barrageCd, blowT;
+        float barrageCd, blowT, stampFlip;
         void specialCtl(float dt, Intent it, ref Vector3 move, float dist, bool vis)
         {
             var s = a.specialActive;
+            // cheer on a teammate's charging Cheer Orb
+            if ((s == null || s.id != "booyah") && random() < dt * 1.3f && SpecialSystem.orbCharging(a)) it.cheer = true;
+            // don't waste shots or bombs into a Mega Stamp's swing from the front (its guard deflects them)
+            var tsp = target?.specialActive;
+            if (tsp != null && tsp.id == "stamp" && tsp.data is Stamp.State tst && tst.guard > 0)
+            {
+                var T = target; float fy = tst.bodyYaw, rx = a.pos.x - T.pos.x, rz = a.pos.z - T.pos.z, rl = Mathf.Sqrt(rx * rx + rz * rz); if (rl == 0) rl = 1;
+                if ((rx * Mathf.Sin(fy) + rz * Mathf.Cos(fy)) / rl > Mathf.Cos(1.2f)) { it.fire = false; it.sub = false; }
+            }
             if (s == null) return;
             bool fighting = mode == "fight" && target != null;
+            var t = target;
+            // charge straight at the target only when it's close (further out the nav path + water avoidance steer)
+            void toward(ref Vector3 mv)
+            {
+                if (t == null || dist > 5 || Mathf.Abs(t.pos.y - a.pos.y) > 1.2f) return;
+                float dx = t.pos.x - a.pos.x, dz = t.pos.z - a.pos.z, l = Mathf.Sqrt(dx * dx + dz * dz); if (l == 0) l = 1;
+                if (G.level.groundHeight(a.pos.x + (dx / l) * 1.5f, a.pos.z + (dz / l) * 1.5f, a.pos.y + 1) < a.pos.y - 1.5f) return;   // don't run off a ledge
+                mv = new Vector3(dx / l, 0, dz / l);
+            }
             switch (s.kind ?? s.id)
             {
                 case "barrage":
@@ -655,6 +685,55 @@ namespace Inkwave
                 case "zooka":
                     it.fire = fighting ? vis && dist < 42 : random() < 0.06f;
                     it.squid = false;
+                    break;
+                case "kraken":
+                    it.squid = false;
+                    if (fighting) { toward(ref move); it.fire = dist < 3.6f && vis; if (a.grounded && dist > 6 && random() < dt * 0.8f) it.jump = true; }
+                    break;
+                case "booyah":
+                    it.squid = false;
+                    it.fire = s.data is Booyah.State bst && bst.charge >= 1 && random() < dt * 3;
+                    break;
+                case "stamp":
+                {
+                    // heavy stamp: charge when the target is roughly ahead of the (slow-turning) body, stop to turn when it
+                    // isn't, flip (jump + swing) to hit something right behind or just past swing reach, throw it at range
+                    it.squid = false;
+                    var d = s.def; var sst = (Stamp.State)s.data;
+                    stampFlip -= dt;
+                    if (stampFlip > 0) { if (!a.grounded) it.fire = true; break; }   // mid-jump: swing once airborne = the flip
+                    if (fighting && t != null)
+                    {
+                        float off = Mathf.Abs(angleDiff(sst.bodyYaw, Mathf.Atan2(t.pos.x - a.pos.x, t.pos.z - a.pos.z)));
+                        bool near3 = Mathf.Abs(t.pos.y - a.pos.y) < 1.8f;
+                        if (a.grounded && near3 && dist < 2.6f && off > 2.3f) { it.jump = true; stampFlip = 0.4f; }                    // right behind: flip
+                        else if (a.grounded && near3 && off < 0.3f && dist > 3.3f && dist < 4.3f) { it.jump = true; stampFlip = 0.4f; }   // just out of reach: flip
+                        else if (off > 0.9f && dist < 9) move = Vector3.zero;                                                          // stop and turn
+                        else
+                        {
+                            // charge: straight at the target from further out than other specials (unless that runs off a ledge)
+                            if (near3 && dist < 12)
+                            {
+                                float dx = t.pos.x - a.pos.x, dz = t.pos.z - a.pos.z, l = Mathf.Sqrt(dx * dx + dz * dz); if (l == 0) l = 1;
+                                if (G.level.groundHeight(a.pos.x + (dx / l) * 1.5f, a.pos.z + (dz / l) * 1.5f, a.pos.y + 1) >= a.pos.y - 1.5f) move = new Vector3(dx / l, 0, dz / l);
+                            }
+                            it.fire = off < 0.7f && dist < d.reach + d.radius + 0.5f;
+                        }
+                        if (vis && dist > 9 && dist < 20 && random() < dt * 0.8f) it.sub = true;
+                    }
+                    else it.fire = random() < 0.5f;
+                    break;
+                }
+                case "crab":
+                    it.fire = fighting ? vis && dist < 24 : random() < 0.3f;
+                    it.sub = fighting && vis && dist > 8 && dist < 22 && random() < dt * 1.5f;
+                    it.squid = (fighting && s.data is Crab.State cst && cst.hp < s.def.hp * 0.3f && dist > 8) || (!fighting && pathRemaining() > 12);
+                    break;
+                case "jetpack":
+                    it.fire = fighting && vis && dist < 30;
+                    break;
+                case "zipcaster":
+                    if (fighting && vis && dist > 6 && dist < 18 && random() < dt * 0.6f) it.sub = true;
                     break;
                 case "blower":
                     blowT += dt;
@@ -813,7 +892,8 @@ namespace Inkwave
             // a special that owns the body (a ride / transformation) plays out; others only get our footwork — the special
             // keeps the trigger (the riding specials arrive with specials.js)
             var sp = a.specialActive;
-            if (d == null || (sp != null && sp.body) || a.climbing || _climbAim != null || a.superJumpState != null) return null;
+            string spK = sp?.kind ?? sp?.id;
+            if (d == null || spK == "kraken" || spK == "stamp" || spK == "crab" || spK == "jetpack" || spK == "zipcaster" || (sp != null && sp.body) || a.climbing || _climbAim != null || a.superJumpState != null) return null;
             bool moveOnly = sp != null;
             float score = threatScore(d);
             if (score < 0.15f) { thrEnd(false); return null; }   // lost interest in us / walked off after someone else

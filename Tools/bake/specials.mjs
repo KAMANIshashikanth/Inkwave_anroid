@@ -19,7 +19,11 @@ G.settings = { quality: 'low' };
 const SP = await imp('game/special-props.js');
 
 const r6 = (x) => +x.toFixed(6);
-fs.rmSync(OUT, { recursive: true, force: true });
+// clear the old meshes but keep Unity's .meta files (stable GUIDs across re-bakes)
+for (const f of fs.existsSync(OUT) ? fs.readdirSync(OUT, { recursive: true }) : []) {
+  const p = path.join(OUT, f);
+  if (fs.statSync(p).isFile() && !p.endsWith('.meta')) fs.rmSync(p);
+}
 const man = { version: 1, props: [] };   // (an array: JsonUtility reads no dictionaries)
 let bytes = 0, count = 0;
 
@@ -34,6 +38,8 @@ function walk(kind, v, name) {
   if (v.isVector3) return [r6(v.x), r6(v.y), r6(v.z)];
   if (typeof v === 'number') return r6(v);
   if (typeof v === 'string' || typeof v === 'boolean') return v;
+  // a list of vectors flattens to [x, y, z, x, y, z …] (JsonUtility reads no nested arrays)
+  if (Array.isArray(v) && v.length && v.every((x) => x && x.isVector3)) return v.flatMap((x) => [r6(x.x), r6(x.y), r6(x.z)]);
   if (Array.isArray(v)) return v.map((x, i) => walk(kind, x, `${name}_${i}`));
   if (typeof v === 'object') {
     const o = {};

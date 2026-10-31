@@ -76,7 +76,7 @@ namespace Inkwave
                 if (top < pos.y - d.height * 0.5f || e.pos.y > pos.y + d.height * 0.5f) continue;
                 // horizontal distance from the player axis to the segment
                 var (dist, _) = Physics.segmentCapsuleDist(prev, new Vector3(pos.x, prev.y, pos.z), new Vector3(e.pos.x, prev.y - 0.5f, e.pos.z), 0.01f, 1);
-                if (dist < d.radius + PLAYER.radius)
+                if (dist < d.radius + (e.hitR ?? PLAYER.radius))
                 {
                     hit.Add(e);
                     G.projectiles.applyHit(owner, e, d.damage, "zooka");

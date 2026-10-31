@@ -18,7 +18,7 @@ namespace Inkwave.EditorTools
 
         // Shaders the game only reaches through Shader.Find must ride along in the build: one material per shader in a
         // Resources folder does that (instancing on, so the instanced variants are kept too).
-        static readonly string[] Shaders = { "Inkwave/Level", "Hidden/Inkwave/PaintSplat", "Inkwave/Debug/VertexColorLit", "Universal Render Pipeline/Unlit", "Inkwave/Kid/Body", "Inkwave/Kid/Glass", "Inkwave/Fx/InkBlob", "Inkwave/Fx/Ribbon", "Inkwave/Fx/Additive", "Inkwave/Fx/BladeFx", "Inkwave/Fx/BladeAura", "Inkwave/Fx/Tint", "Inkwave/Fx/Curtain", "Inkwave/Fx/Trail", "Inkwave/Fx/SpinBlur", "Inkwave/Fx/SenseRing", "Inkwave/Fx/LockRing", "Inkwave/Fx/Bubble", "Inkwave/Fx/Swirl", "Inkwave/Fx/Beam" };
+        static readonly string[] Shaders = { "Inkwave/Level", "Hidden/Inkwave/PaintSplat", "Inkwave/Debug/VertexColorLit", "Universal Render Pipeline/Unlit", "Inkwave/Kid/Body", "Inkwave/Kid/Glass", "Inkwave/Fx/InkBlob", "Inkwave/Fx/Ribbon", "Inkwave/Fx/Additive", "Inkwave/Fx/BladeFx", "Inkwave/Fx/BladeAura", "Inkwave/Fx/Tint", "Inkwave/Fx/Curtain", "Inkwave/Fx/Trail", "Inkwave/Fx/SpinBlur", "Inkwave/Fx/SenseRing", "Inkwave/Fx/LockRing", "Inkwave/Fx/Bubble", "Inkwave/Fx/Swirl", "Inkwave/Fx/Beam", "Inkwave/Fx/Aura" };
 
         [MenuItem("Inkwave/Build Main Scene")]
         public static void BuildScene()

@@ -772,7 +772,7 @@ namespace Inkwave
             }
         }
 
-        void destroyItem(SubItem it)
+        public void destroyItem(SubItem it)
         {
             if (it.state == "dead") return;
             Vector3 c = it.pos + it.normal * 0.2f;

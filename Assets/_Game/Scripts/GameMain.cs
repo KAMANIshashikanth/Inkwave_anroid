@@ -242,7 +242,9 @@ namespace Inkwave
             if (m != null && m.controller != null && m.state == "playing") m.controller.computeAim();
             // bomb arc preview
             var loc = m?.local;
-            G.projectiles.updateArc(loc, loc != null && loc.alive && loc.weaponRunner.aimingSub && m.state == "playing" && !m.paused);
+            // the throw arc: while aiming a sub, or holding a charged Cheer Orb
+            bool orbReady = loc != null && loc.specialActive != null && loc.specialActive.id == "booyah" && loc.specialActive.data is Booyah.State ob && ob.charge >= 1;
+            G.projectiles.updateArc(loc, loc != null && loc.alive && (loc.weaponRunner.aimingSub || orbReady) && m.state == "playing" && !m.paused);
             // paint → atlas, shader uniforms
             G.paint.setView(G.camPos);
             G.paint.flush(dt);

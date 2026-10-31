@@ -336,6 +336,11 @@ namespace Inkwave
         float kidSY = 1, kidSXZ = 1, sqSY = 1, sqSXZ = 1, kidLift;
         float tumble, tumbleX = 1, tumbleZ, tumbleDrop, _dt;
         bool weaponHidden, subPropHidden; float swipeSide = 1, spinRate, spinAngle;
+        /** the ink tank's group (Ink Jet: the pack replaces the tank on the kid's back) */
+        public Transform tankGroup => tank?.group;
+        public void hideTank(bool on) { if (tank == null) return; tank.fill.gameObject.SetActive(!on); tank.glass.gameObject.SetActive(!on); }
+        /** hide the sub prop in hand (Cheer Orb: the orb is held overhead instead) */
+        public bool hideSubProp { get => subPropHidden; set => subPropHidden = value; }
         /** hide the held weapon (Howl Box: the speaker is held instead) */
         public bool hideWeapon
         {

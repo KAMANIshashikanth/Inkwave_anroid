@@ -80,6 +80,12 @@ namespace Inkwave
             IMPL["zooka"] = new Zooka();
             IMPL["wail"] = new Wail();
             IMPL["blower"] = new Blower();
+            IMPL["kraken"] = new Kraken();
+            IMPL["booyah"] = new Booyah();
+            IMPL["jetpack"] = new Jetpack();
+            IMPL["stamp"] = new Stamp();
+            IMPL["zipcaster"] = new Zipcaster();
+            IMPL["crab"] = new Crab();
         }
         /** the behaviour kind (the Bomb Barrage variants all share 'barrage') */
         public static string kindOf(string id) => id != null && Config.SPECIALS.TryGetValue(id, out var d) && d.kind != null ? d.kind : id;
@@ -125,6 +131,7 @@ namespace Inkwave
             shieldMeshes.Clear();
             foreach (var o in owned) if (o != null) destroy(o);
             owned.Clear();
+            _cheerT.Clear();
             for (int i = 0; i < _glow.Length; i++) { if (_glow[i] != null) destroy(_glow[i]); _glow[i] = null; }
         }
         public void add(GameObject o) { owned.Add(o); }
@@ -185,9 +192,9 @@ namespace Inkwave
             if (a.specialActive == s) a.specialActive = null;
             emit("special:end", new Ev { actor = a, id = s.id, reason = reason });
             if (reason == "time" && hearable(a)) play("special_end", new AudioOpts { pos = a.isLocal ? (Vector3?)null : a.pos, volume = a.isLocal ? 0.7f : 0.45f });
-            // jetpack / zipline: super jump back to where the special started (the Return marker comes with those kinds)
-            if (s.jumpBack && reason != "splat" && a.alive && s.origin.HasValue && Vector3.Distance(a.pos, s.origin.Value) > 2.5f)
-                a.superJump(s.origin.Value, instant: true, home: true);
+            // jetpack / zipline: super jump back to where the special started (its Return marker greys out on the way)
+            if (s.jumpBack && reason != "splat" && a.alive && s.origin.HasValue && Vector3.Distance(a.pos, s.origin.Value) > 2.5f && a.superJump(s.origin.Value, instant: true, home: true)) s.marker?.returning();
+            else s.marker?.finish();
         }
         public void onSplat(Actor a)
         {
@@ -199,6 +206,8 @@ namespace Inkwave
         {
             var s = a.specialActive;
             if (s == null) return 0;
+            if (s.id == "crab" && s.data is Crab.State cs) return Mathf.Min(s.dur > 0 ? Mathf.Max(0, 1 - s.t / s.dur) : 1, Mathf.Max(0, cs.hp / s.def.hp));
+            if (s.id == "booyah") return s.data is Booyah.State os && os.thrown ? 0 : 1;   // held: stays full until thrown
             if (s.id == "blower" && s.data is Blower.State bs) return Mathf.Max(0, 1 - bs.count / s.def.max) * (s.dur > 0 ? Mathf.Max(0, 1 - s.t / s.dur) : 1);
             if (s.dur > 0) return Mathf.Max(0, 1 - s.t / s.dur);
             return 1;
@@ -295,10 +304,45 @@ namespace Inkwave
         }
         static void disposeShield(Shield m) { destroy(m.t.gameObject); destroy(m.mat); }
 
+        // ============================================================================================= "Yeah!" cheers
+        readonly Dictionary<Actor, float> _cheerT = new Dictionary<Actor, float>();
+        public void cheer(Actor a)
+        {
+            if (!a.alive || G.time - (_cheerT.TryGetValue(a, out var ct) ? ct : -9) < 0.4f) return;
+            _cheerT[a] = G.time;
+            if (hearable(a)) play("booyah_cheer", new AudioOpts { pos = a.isLocal ? (Vector3?)null : a.pos, volume = a.isLocal ? 0.7f : 0.5f, pitch = 0.95f + random() * 0.15f });
+            var d = Config.SPECIALS["booyah"];
+            bool helped = false;
+            foreach (var o in G.actors)
+            {
+                var s = o.specialActive;
+                if (o.team != a.team || !o.alive || s == null || s.id != "booyah" || !(s.data is Booyah.State st) || st.thrown) continue;
+                st.charge = Mathf.Min(1, st.charge + d.cheer);
+                st.cheered = 0.35f;
+                helped = true;
+            }
+            // cheering on a teammate's orb tops up your own special a little
+            if (helped && a.specialActive == null)
+            {
+                bool was = a.specialReady();
+                a.special = Mathf.Min(a.specialCost(), a.special + d.cheerSpecial);
+                if (!was && a.specialReady()) emit("special:ready", new Ev { actor = a });
+            }
+            emit("actor:cheer", new Ev { actor = a, helped = helped });
+        }
+        /** a teammate of a is charging a Cheer Orb right now */
+        public static bool orbCharging(Actor a)
+        {
+            foreach (var o in G.actors) { var s = o.specialActive; if (o != a && o.team == a.team && s != null && s.id == "booyah" && s.data is Booyah.State st && !st.thrown) return true; }
+            return false;
+        }
+
         // ============================================================================================= per frame
         readonly List<Actor> _drop = new List<Actor>();
         public void update(float dt)
         {
+            // cheer input (controllers set intent.cheer for one frame)
+            foreach (var a in G.actors) if (a.intent.cheer) { a.intent.cheer = false; cheer(a); }
             // force fields: timers, follow, sharing on contact
             _drop.Clear();
             foreach (var kv in shieldMeshes) if (!(kv.Key.status.shield > 0) || !kv.Key.alive) _drop.Add(kv.Key);
