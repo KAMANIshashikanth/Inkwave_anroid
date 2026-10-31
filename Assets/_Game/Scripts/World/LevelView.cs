@@ -41,6 +41,26 @@ namespace Inkwave.World
             Shader.SetGlobalVector("_TeamB", b.linear);
         }
 
+        // the stage's mural / signage atlas + its placement table (murals.js, from the stage bake); null = no murals.
+        // Missing rows take levelMaterial.js's defaults.
+        public static void setMurals(Texture tex, StageLoader.MuralRow[] rows)
+        {
+            const int MUR = 12;
+            var A = new Vector4[MUR]; var B = new Vector4[MUR]; var C = new Vector4[MUR];
+            for (int i = 0; i < MUR; i++)
+            {
+                var r = rows != null && i < rows.Length ? rows[i] : null;
+                A[i] = r?.rect != null && r.rect.Length >= 4 ? new Vector4(r.rect[0], r.rect[1], r.rect[2], r.rect[3]) : new Vector4(0, 1, 0, 0.25f);
+                B[i] = r?.place != null && r.place.Length >= 4 ? new Vector4(r.place[0], r.place[1], r.place[2], r.place[3]) : new Vector4(0, -8, 0, 0);
+                C[i] = r?.fx != null && r.fx.Length >= 2 ? new Vector4(r.fx[0], r.fx[1], 0, 0) : Vector4.zero;
+            }
+            Shader.SetGlobalVectorArray("_MurA", A);
+            Shader.SetGlobalVectorArray("_MurB", B);
+            Shader.SetGlobalVectorArray("_MurC", C);
+            if (tex != null) Shader.SetGlobalTexture("_Mural", tex);
+            Shader.SetGlobalFloat("_MurOn", tex != null ? 1 : 0);
+        }
+
         // per frame: the paint clock + the ripple table (three space → Unity world: z mirrored)
         public void update(PaintSystem paint)
         {

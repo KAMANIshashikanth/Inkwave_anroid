@@ -6,8 +6,9 @@
 // detail (grime, coping, ramp grooves, container rust, stair wear, wall streaks, boatyard drain), contact darkening, the
 // full ink layer (B-spline atlas reconstruction close up, meniscus / team-seam height field → normal, fresh/dry gloss,
 // texlib gel micro-surface, ripples, lip / body colour, halo), lit through URP's PBR with a clear wet coat, baked AO.
-// Without the texlib (bake missing) a plain mottled surface stands in. Murals, swim wakes, dusk lamps and the
-// see-through window arrive with their milestones (murals: Task 7, wakes: Task 10).
+// Murals / signage from the stage's mural atlas (murals.js via the stage bake: _Mural + the 12-row placement table).
+// Without the texlib (bake missing) a plain mottled surface stands in. Swim wakes, dusk lamps and the see-through
+// window arrive with their milestones (wakes: Task 10).
 //
 // The mesh sits under the Z-mirrored world root, so Unity world space is three space mirrored: any cross product of
 // world vectors flips sign — the face bitangent is -cross(N, T) here (three: cross(N, T)). Patterns keyed to world
@@ -61,6 +62,12 @@ Shader "Inkwave/Level"
             CBUFFER_END
             float4 _TeamA, _TeamB;      // linear team colours (global per match)
             float _InkClock;
+            // murals (LevelView.setMurals): atlas rect (x0, w, y0, h), placement on the face in metres (x0, xLen, y0, yLen;
+            // xLen < 0 = strip repeating every -xLen face heights, yLen <= 0 = full face height), weathering (surface shows
+            // through, paint damage cuts it)
+            TEXTURE2D(_Mural); SAMPLER(sampler_Mural);
+            float4 _MurA[12], _MurB[12], _MurC[12];
+            float _MurOn;
             float4 _Rip[INK_RIPPLE_N];  // xyz (Unity world) + birth time (paint clock)
             float4 _RipP[INK_RIPPLE_N]; // amplitude (m), wavelength (m), speed (m/s), life (s)
 
@@ -79,7 +86,7 @@ Shader "Inkwave/Level"
                 float4 positionCS : SV_POSITION;
                 float3 positionWS : TEXCOORD0;
                 float3 normalWS : TEXCOORD1;
-                float3 tanWS : TEXCOORD2;
+                float4 tanWS : TEXCOORD2;   // w = mural id (-1 none)
                 float4 color : TEXCOORD3;
                 float4 uv0 : TEXCOORD4;
                 float4 uv1 : TEXCOORD5;
@@ -94,7 +101,7 @@ Shader "Inkwave/Level"
                 o.positionCS = p.positionCS;
                 o.positionWS = p.positionWS;
                 o.normalWS = TransformObjectToWorldNormal(i.normalOS);
-                o.tanWS = TransformObjectToWorldDir(i.uv3.xyz);
+                o.tanWS = float4(TransformObjectToWorldDir(i.uv3.xyz), i.uv3.w);
                 o.color = i.color;
                 o.uv0 = i.uv0; o.uv1 = i.uv1; o.uv2 = i.uv2;
                 o.fogCoord = ComputeFogFactor(p.positionCS.z);
@@ -270,7 +277,7 @@ Shader "Inkwave/Level"
                 float2 fsz = i.uv2.zw;
                 float pattern = i.uv2.x;
                 bool wallF = abs(vWNorm.y) < 0.5;
-                float3 T = normalize(i.tanWS - vWNorm * dot(i.tanWS, vWNorm));
+                float3 T = normalize(i.tanWS.xyz - vWNorm * dot(i.tanWS.xyz, vWNorm));
                 float3 Bt = MIRROR_SIGN * cross(vWNorm, T);
                 const float3 MIR = float3(1.0, 1.0, MIRROR_SIGN);
                 float3 vWPos = i.positionWS * MIR;    // three space
@@ -285,6 +292,7 @@ Shader "Inkwave/Level"
                 float4 gStair = 0;      // stair / ramp top: distance across from one side (m), width (m), edge kind, step coordinate
                 float gTexKeep = 0.0;   // share of the texture relief kept under ink (stairs keep their steps)
                 float gTexPaint = 1.0;
+                float3 gTexMod = 1.0;   // surface albedo modulation (≈ 1 mean) for weathered murals
             #if USE_TEXLIB
                 float fine = vnoise(fu * 9.0);
                 {
@@ -301,7 +309,7 @@ Shader "Inkwave/Level"
                     float2 tA = float2(1, 0), tD = float2(0, 1);
                     if (sp.x > 0.0 && vWNorm.y > 0.5)
                     {
-                        float3 fT = i.tanWS * MIR, fN = vWNorm * MIR;                       // three space
+                        float3 fT = i.tanWS.xyz * MIR, fN = vWNorm * MIR;                       // three space
                         bool alongU = abs(fT.y) > 0.02;                                      // x-running ramps: face u runs up/down the slope
                         float sg = alongU ? sign(fT.y) : sign(fN.z * fT.x - fN.x * fT.z);   // uphill = +axis?
                         float fa = alongU ? fu.x : fu.y, fcr = alongU ? fu.y : fu.x;
@@ -323,6 +331,7 @@ Shader "Inkwave/Level"
                          : (tt.x > 0.5 ? dc * ts.albedo.rgb * 1.25 : ts.albedo.rgb);
                     base *= texlibMacro(wp + vWPos.y * 0.7);
                     base *= lerp(1.0, ts.orm.r, 0.85);                            // cavity occlusion in grout / seams / grooves
+                    gTexMod = (tt.x > 1.5 ? ts.albedo.aaa * 1.25 : (tt.x > 0.5 ? ts.albedo.rgb * 1.25 : float3(1, 1, 1))) * lerp(1.0, ts.orm.r, 0.85);
                     gTexPaint = tt.x > 1.5 ? saturate(ts.albedo.a * 1.45) : 1.0;
                     rough = ts.orm.g;
                     gTexN = ts.normal; gTexORM = ts.orm; gTexStr = tt.y;
@@ -465,6 +474,21 @@ Shader "Inkwave/Level"
                 float mott = vnoise(fu * 1.7) * 0.6 + vnoise(fu * 6.3) * 0.4;
                 base *= 0.94 + 0.1 * mott;
             #endif
+                // murals / signage
+                if (_MurOn > 0.5 && i.tanWS.w > -0.5)
+                {
+                    int mi = int(i.tanWS.w + 0.5);
+                    float4 mA = _MurA[mi], mB = _MurB[mi];
+                    float2 mC = _MurC[mi].xy;
+                    float my = mB.w > 0.0 ? (fu.y - mB.z) / mB.w : fu.y / fsz.y;
+                    float mx = mB.y < 0.0 ? fu.x / (-mB.y * fsz.y) : clamp((fu.x - mB.x) / mB.y, 0.0005, 0.9995);
+                    float2 muv = float2(mA.x + mA.y * mx, mA.z + mA.w * clamp(my, 0.004, 0.996));
+                    float4 mc = SAMPLE_TEXTURE2D(_Mural, sampler_Mural, muv);
+                    mc.rgb *= lerp(1.0, gTexMod, mC.x);
+                    mc.a *= lerp(1.0, gTexPaint, mC.y);
+                    float big = fbm(vWPos.xz * 0.18 + vWPos.y * 0.1);
+                    base = lerp(base, mc.rgb * (0.92 + 0.1 * big), mc.a * 0.96);
+                }
                 // contact darkening at the foot of walls that stand on something
                 if (i.uv1.z > 0.5 && i.uv1.w > 0.5) base *= lerp(0.55, 1.0, smoothstep(0.0, 0.85, fu.y));
 

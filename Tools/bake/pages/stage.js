@@ -17,7 +17,7 @@ import { PropKit } from '/reference/inkwave/src/world/props.js';
 import { dressingFor } from '/reference/inkwave/src/world/dressing.js';
 import { inMode, layoutFor } from '/reference/inkwave/src/world/variants.js';
 import { MAP_LAYOUTS } from '/reference/inkwave/src/world/maps.js';
-import { MAPS, mapTheme } from '/reference/inkwave/src/config.js';
+import { MAPS, mapTheme, PLAYER } from '/reference/inkwave/src/config.js';
 import { Level } from '/reference/inkwave/src/world/level.js';
 import { Decor } from '/reference/inkwave/src/world/decor.js';
 import { Environment } from '/reference/inkwave/src/world/environment.js';
@@ -261,11 +261,16 @@ try {
   await save(`${OUT}/${time}.sky.bytes`, sky);
   if (env._envScene) await save(`${OUT}/${time}.env.bytes`, bakeCube(renderer, env._envScene));
   const pick = (a, keys) => (a ? a.map((x) => Object.fromEntries(keys.filter((k) => k in x).map((k) => [k, val(x[k])]))) : []);
+  // environment.js waterHeightAt = WATER_Y + h(x, z, t) × amp(x, z): amp (the swell, calmer near the deck) read back per
+  // fixed spot, so Unity only needs the three-sine h
+  const swell = (x, z, t) => 0.45 * Math.sin(x * 0.11 + z * 0.047 + t * 0.95) + 0.35 * Math.sin(-x * 0.052 + z * 0.097 + t * 1.13 + 1.7) + 0.2 * Math.sin(x * 0.173 - z * 0.141 + t * 1.61 + 4.1);
+  const ampAt = (x, z) => { let best = 0, amp = 0.16; for (let t = 0; t < 20; t += 0.37) { const h = swell(x, z, t); if (Math.abs(h) > best) { best = Math.abs(h); amp = (env.waterHeightAt(x, z, t) - PLAYER.waterY) / h; } } return num(amp); };
   const anim = {
-    sailboats: pick(env.sailboats, ['a', 'w', 'd', 'phase', 's']),
-    buoys: pick(env.buoys, ['x', 'z', 'phase', 's']),
+    waterY: PLAYER.waterY,
+    sailboats: pick(env.sailboats, ['a', 'w', 'd', 'phase', 's']).map((b) => ({ ...b, amp: ampAt(Math.cos(b.a) * b.d, Math.sin(b.a) * b.d) })),
+    buoys: pick(env.buoys, ['x', 'z', 'phase', 's']).map((b) => ({ ...b, amp: ampAt(b.x, b.z) })),
     gulls: pick(env.gulls, ['a0', 'w', 'cx', 'cz', 'r', 'h', 's']),
-    moored: (env.moored || []).map((m) => ({ name: m.mesh?.name, phase: num(m.phase), roll: num(m.roll), x: num(m.spec?.x), z: num(m.spec?.z) })),
+    moored: (env.moored || []).map((m) => ({ name: m.mesh?.name, phase: num(m.phase), roll: num(m.roll), x: num(m.spec?.x), z: num(m.spec?.z), yaw: num(m.spec?.yaw ?? 0), amp: ampAt(m.spec?.x, m.spec?.z) })),
   };
   const out = {
     id, time, theme, quality, night: num(night),

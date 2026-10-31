@@ -114,8 +114,10 @@ namespace Inkwave
             {
                 stageDressing = StageLoader.load(sj);
                 StageEnvironment.apply(sj, sun, cam, G.settings.shadows, G.quality.bloom);
+                LevelView.setMurals(stageDressing.GetComponent<StageOwner>().materials.muralTexture(), sj.murals?.table);
                 return;
             }
+            LevelView.setMurals(null, null);
             Debug.LogWarning($"[inkwave] no stage bake for {stageId}/{stageTime} — stand-in environment");
             sun.type = LightType.Directional;
             sun.intensity = 1.3f;

@@ -1,6 +1,7 @@
 // Stage dressing material (World/StageMaterials.cs): three's MeshStandardMaterial / MeshPhysicalMaterial (PBR: base
 // colour × vertex colour × map, roughness, metalness, clear coat, emissive, alpha test, side) and MeshBasicMaterial
 // (PROP_UNLIT) through URP. Colours arrive linear. Transparent materials set the blend / zwrite properties.
+// PROP_GULL: environment.js HZ_VERT_BEGIN_GULL — wings flap / glide in object space (aPhase in TEXCOORD1.x, _StageTime).
 Shader "Inkwave/Prop"
 {
     Properties
@@ -34,6 +35,18 @@ Shader "Inkwave/Prop"
             float _UseVC, _Roughness, _Metallic, _Cutoff, _ClearCoat, _ClearCoatRough;
             float _Cull, _SrcBlend, _DstBlend, _ZWrite, _OffF, _OffU;
         CBUFFER_END
+        float _StageTime;   // environment time (World/StageAnimator.cs)
+        float3 propVertex(float3 p, float phase)
+        {
+        #if PROP_GULL
+            float side = abs(p.x);
+            float glide = 0.35 + 0.65 * smoothstep(-0.3, 0.6, sin(_StageTime * 0.55 + phase * 17.0));
+            float flap = sin(_StageTime * 8.5 + phase * 6.2831);
+            p.y += flap * glide * side * 0.62 * smoothstep(0.08, 0.35, side);
+            p.y -= 0.12 * side * side;
+        #endif
+            return p;
+        }
         float4 propAlbedo(float4 vc, float2 uv)
         {
             float4 c = _BaseColor * float4(_InstColor.rgb, 1);
@@ -60,13 +73,14 @@ Shader "Inkwave/Prop"
             #pragma multi_compile_fragment _ _REFLECTION_PROBE_BLENDING
             #pragma multi_compile_fog
             #pragma multi_compile_local _ PROP_UNLIT
+            #pragma multi_compile_local_vertex _ PROP_GULL
             #pragma multi_compile_local_fragment _ PROP_COAT
             #if PROP_COAT
                 #define _CLEARCOAT 1
             #endif
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
-            struct Attributes { float4 positionOS : POSITION; float3 normalOS : NORMAL; float4 color : COLOR; float2 uv : TEXCOORD0; };
+            struct Attributes { float4 positionOS : POSITION; float3 normalOS : NORMAL; float4 color : COLOR; float2 uv : TEXCOORD0; float2 uv1 : TEXCOORD1; };
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
@@ -80,7 +94,7 @@ Shader "Inkwave/Prop"
             Varyings vert(Attributes i)
             {
                 Varyings o;
-                VertexPositionInputs p = GetVertexPositionInputs(i.positionOS.xyz);
+                VertexPositionInputs p = GetVertexPositionInputs(propVertex(i.positionOS.xyz, i.uv1.x));
                 o.positionCS = p.positionCS;
                 o.positionWS = p.positionWS;
                 o.normalWS = TransformObjectToWorldNormal(i.normalOS);

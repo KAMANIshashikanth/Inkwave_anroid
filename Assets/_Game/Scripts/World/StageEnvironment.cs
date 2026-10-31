@@ -9,8 +9,8 @@
 // default reflection at reflectionIntensity = environmentIntensity.
 // Cubes are baked in three space; Unity's world is three mirrored on Z, so the faces are rearranged on load (+Z ↔ −Z,
 // every face flipped on the axis the mirror reverses).
-// First-pass post (until renderer.js's grade pass is ported): URP neutral tonemapping, exposure, saturation, contrast,
-// bloom on the tiers that have it.
+// Post as renderer.js: bloom (URP's, on the tiers that have it; tonemapping off, HDR grading so nothing clamps), then
+// the theme's grade + Khronos neutral tone mapping (StageGrade).
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -145,16 +145,13 @@ namespace Inkwave.World
             return sh;
         }
 
-        // ---- post (first pass)
+        // ---- post
         static void post(Camera cam, StageLoader.StageJ s, bool bloom)
         {
             var g = s.grade ?? new StageLoader.GradeJ();
+            if (GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset urp) urp.colorGradingMode = ColorGradingMode.HighDynamicRange;
             profile = ScriptableObject.CreateInstance<VolumeProfile>();
-            var tm = profile.Add<Tonemapping>(true); tm.mode.Override(TonemappingMode.Neutral);
-            var ca = profile.Add<ColorAdjustments>(true);
-            ca.postExposure.Override(Mathf.Log(Mathf.Max(1e-3f, s.exposure * g.uExposure), 2));
-            ca.saturation.Override(Mathf.Clamp((g.uSat - 1) * 100, -100, 100));
-            ca.contrast.Override(Mathf.Clamp((g.uContrast - 1) * 100, -100, 100));
+            var tm = profile.Add<Tonemapping>(true); tm.mode.Override(TonemappingMode.None);
             if (bloom)
             {
                 var bl = profile.Add<Bloom>(true);
@@ -165,11 +162,13 @@ namespace Inkwave.World
             var vol = volumeGo.AddComponent<Volume>();
             vol.isGlobal = true; vol.priority = 10; vol.sharedProfile = profile;
             var cd = cam.GetUniversalAdditionalCameraData();
-            if (cd != null) cd.renderPostProcessing = true;
+            if (cd != null) cd.renderPostProcessing = bloom;   // URP's post only carries bloom; the grade pass runs regardless
+            StageGrade.apply(s);
         }
 
         public static void dispose()
         {
+            StageGrade.dispose();
             if (volumeGo != null) Object.Destroy(volumeGo);
             if (profile != null) Object.Destroy(profile);
             if (skyMat != null) Object.Destroy(skyMat);

@@ -3,7 +3,7 @@
 //                                 alpha test, side), MeshBasic → unlit, transparent → alpha / additive blended,
 //   MeshDepthMaterial (custom shadow depth) → not drawn.
 // First-pass stand-ins until their chunks are ported (Task 7 part 2): environment.js patchScenery haze / night glow
-// (HZ_*: plain lit + Unity fog), the cloth wave (flags: static), the Sea ShaderMaterial (a glossy lit plane in the
+// (HZ_*: plain lit + Unity fog; HZ_GULL's wing flap is ported), the cloth wave (flags: static), the Sea ShaderMaterial (a glossy lit plane in the
 // theme's sea colours), the spawn pads' face / barrier and the lighthouse beam (unlit uColor / uCol).
 // three colours are linear: they are written with SetVector (SetColor would treat them as sRGB).
 using System.Collections.Generic;
@@ -67,6 +67,7 @@ namespace Inkwave.World
             var tex = texture(m.map);
             if (tex != null) mat.SetTexture("_BaseMap", tex);
             if (unlit) mat.EnableKeyword("PROP_UNLIT");
+            if (m.defineList != null && System.Array.IndexOf(m.defineList, "HZ_GULL") >= 0) mat.EnableKeyword("PROP_GULL");
             if (m.clearcoat > 0 && !unlit)
             {
                 mat.EnableKeyword("PROP_COAT");

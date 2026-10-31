@@ -50,9 +50,15 @@ namespace Inkwave.World
             public int instN, renderOrder;
             public bool visible, castShadow, receiveShadow;
         }
+        [Serializable] public class SailJ { public float a, w, d, phase, s, amp; }
+        [Serializable] public class BuoyJ { public float x, z, phase, s, amp; }
+        [Serializable] public class GullJ { public float a0, w, cx, cz, r, h, s; }
+        [Serializable] public class MooredJ { public string name; public float phase, roll, x, z, yaw, amp; }
+        [Serializable] public class AnimJ { public float waterY = -1.6f; public SailJ[] sailboats; public BuoyJ[] buoys; public GullJ[] gulls; public MooredJ[] moored; }
         [Serializable]
         public class StageJ
         {
+            public AnimJ anim;
             public string id, time, theme, quality;
             public float night, exposure = 1, environmentIntensity = 1;
             public FogJ fog;
@@ -126,6 +132,7 @@ namespace Inkwave.World
                 }
             }
             root.AddComponent<StageOwner>().materials = mats;
+            if (s.anim != null) root.AddComponent<StageAnimator>().init(s.anim);
             Debug.Log($"[Inkwave] stage dressing {s.id}/{s.time}: {objs} objects, {tris} tris, {mats.count} materials");
             return root;
         }
